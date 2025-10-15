@@ -88,7 +88,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
     public DcMotorEx intakeWheels = null;
     public DcMotorEx shooterLeft = null;
     public DcMotorEx shooterRight = null;
-    private ElapsedTime myTimer = new ElapsedTime();
 
 
 
@@ -113,6 +112,7 @@ public class AprilTagPatternAuto extends LinearOpMode {
     public void intakeArtifacts() {
         intakeWheels.setPower(-1);
     }
+
 
     public void shootArtifacts() {
         shooterLeft.setPower(0.7);
@@ -233,11 +233,12 @@ public class AprilTagPatternAuto extends LinearOpMode {
     public void buildPathsPPG() {
         // basically just plotting the points for the lines that score the PPG pattern
 
-
-        grabPPG = follower.pathBuilder() //
+            grabPPG = follower.pathBuilder() //
                 .addPath(new BezierLine(startPose, PPGPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), PPGPose.getHeading())
                 .build();
+
+        sleep(5000);
 
         // Move to the scoring pose from the first artifact pickup pose
         scorePPG = follower.pathBuilder()
@@ -255,6 +256,8 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), PGPPose.getHeading())
                 .build();
 
+            sleep(5000);
+
         // Move to the scoring pose from the first artifact pickup pose
         scorePGP = follower.pathBuilder()
                 .addPath(new BezierLine(PGPPose, scorePose))
@@ -270,6 +273,8 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .addPath(new BezierLine(startPose, GPPPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), GPPPose.getHeading())
                 .build();
+
+            sleep(5000);
 
         // Move to the scoring pose from the first artifact pickup pose
         scoreGPP = follower.pathBuilder()
@@ -332,7 +337,7 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 if (!follower.isBusy()) {
 
                     // Move to the first artifact pickup location from the scoring position
-                    follower.followPath(scoreGPP);
+                    follower.followPath();
                     setpathStateGPP(-1); //set it to -1 so it stops the state machine execution
                 }
                 break;

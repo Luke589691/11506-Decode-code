@@ -44,6 +44,8 @@ public class tacoDecode extends LinearOpMode {
         shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
         shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
         intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
