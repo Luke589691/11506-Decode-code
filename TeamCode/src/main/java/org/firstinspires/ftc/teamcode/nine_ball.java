@@ -179,6 +179,7 @@ public class nine_ball extends OpMode {
     public int autonomousPathUpdate() {
         // Add your state machine Here
         // Access paths with paths.pathName
-        // Refer to the Pedro Pathing Docs (Auto Example) for an example state machine
+        // Ref
+        // er to the Pedro Pathing Docs (Auto Example) for an example state machine
         return pathState;
     }

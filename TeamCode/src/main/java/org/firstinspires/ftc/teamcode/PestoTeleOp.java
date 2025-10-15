@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 @TeleOp(name = "PestoTeleOP")
 public class PestoTeleOp extends OpMode {
     private Follower follower;
-    public static Pose startingPose; //See ExampleAuto to understand how to use this
+    public static Pose startingPose; //See auto to understand how to use this
     private boolean automatedDrive;
     private Supplier<PathChain> pathChain;
     private TelemetryManager telemetryM;
