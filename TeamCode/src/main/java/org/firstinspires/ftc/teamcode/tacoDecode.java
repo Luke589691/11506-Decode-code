@@ -26,6 +26,11 @@ public class tacoDecode extends LinearOpMode {
     boolean lastAPress = false;
     boolean lastBPress = false;
 
+    boolean lastYPress = false;
+    boolean lastXPress = false;
+    boolean shooterRunning = false;
+    int shooterMode = 0;
+
     boolean humanPlayerMode = false;
 
     @Override
@@ -119,7 +124,7 @@ public class tacoDecode extends LinearOpMode {
                 if (shooterRightPower > 1.0) shooterRightPower = 0.0;
             }
 
-            if (gamepad1.x && !humanPlayerMode) {
+            if (gamepad1.x && !humanPlayerMode) { //todo make it a toggle as well like the intake
                 shooterRight.setPower(shooterRightPower);
                 shooterLeft.setPower(shooterLeftPower);
             }
@@ -128,12 +133,25 @@ public class tacoDecode extends LinearOpMode {
                 shooterLeft.setPower(0);
             }
 
-            if (gamepad1.y && !humanPlayerMode) { //todo make it a toggle as well like the intake
+            if (gamepad1.y && !lastYPress && !humanPlayerMode) {
+                if (shooterRunning && shooterMode == 1) {
+                    shooterRunning = false;
+                    shooterMode = 0;
+                } else {
+                    shooterRunning = true;
+                    shooterMode = 1;
+                }
+            }
+            lastYPress = gamepad1.y;
+
+            if (shooterRunning && shooterMode == 1) {
                 shooterRightPower = 0.62;
                 shooterLeftPower = 0.62;
-
                 shooterRight.setPower(shooterRightPower);
                 shooterLeft.setPower(shooterLeftPower);
+            } else {
+                shooterRight.setPower(0);
+                shooterLeft.setPower(0);
             }
 
 

@@ -10,7 +10,7 @@ import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 
 @TeleOp(name = "Limelight testing")
-public class LimeLight extends LinearOpMode {
+public class limelight extends LinearOpMode {
 
     Limelight3A limelight;
     @Override
