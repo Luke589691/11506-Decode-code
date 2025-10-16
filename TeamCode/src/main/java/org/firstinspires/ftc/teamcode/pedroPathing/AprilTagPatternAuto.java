@@ -1,4 +1,3 @@
-
 /*
 Hello :D my names mikey and i'm the head of software on team 21721. I was looking at the april tag sample code on the PP (pedro pathing) website and it kinda confused me or just wasn't
 what I needed to do, so I decided to make my own! Before you worry about the code itself u need to know a bit about April tags. April tags are basically just QR codes; in the sense
@@ -14,7 +13,6 @@ So basically, you lineup your robot in front of the motif april tag. It scans sa
 say "if the numeric value is 21, then run the GPP pathbuilder" and so on. Right now, though, the code just has movement. So whenever you get your shooting and intake mechanisms figured out, just add that code in the
 designated function and call the function in whichever part of the pathbuilder it is needed. I hope this helps!
 */
-
 
 package org.firstinspires.ftc.teamcode.examples;
 
@@ -56,14 +54,12 @@ public class AprilTagPatternAuto extends LinearOpMode {
     private final Pose GPPPose = new Pose(100, 35.5, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     // Initialize variables for paths
-
     private PathChain grabPPG;
     private PathChain scorePPG;
     private PathChain grabPGP;
     private PathChain scorePGP;
     private PathChain grabGPP;
     private PathChain scoreGPP;
-
 
     //set April Tag values to specific patterns
     private static final int PPG_TAG_ID = 23;
@@ -73,7 +69,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
     private VisionPortal visionPortal;               // Used to manage the video source.
     private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
     private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
-
 
     // Other variables
     private Pose currentPose; // Current pose of the robot
@@ -88,9 +83,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
     public DcMotorEx intakeWheels = null;
     public DcMotorEx shooterLeft = null;
     public DcMotorEx shooterRight = null;
-
-
-
 
     // Custom logging function to support telemetry and Panels
     private void log(String caption, Object... text) {
@@ -113,7 +105,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
         intakeWheels.setPower(-1);
     }
 
-
     public void shootArtifacts() {
         shooterLeft.setPower(0.7);
         shooterRight.setPower(0.7);
@@ -124,10 +115,9 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
             // Stop intake
             intakeWheels.setPower(0);
-            sleep(5000); // stop for 3 seconds
-
+            sleep(5000); // stop for 5 seconds
+        }
     }
-
 
     @Override
     public void runOpMode() {
@@ -154,7 +144,7 @@ public class AprilTagPatternAuto extends LinearOpMode {
         runtime.reset();
 
         setpathStatePPG(0);
-        setpathStateGPP(0);
+        setpathStatePGP(0);
         setpathStateGPP(0);
         runtime.reset();
 
@@ -163,8 +153,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
         shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
         shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-
 
         while (opModeIsActive()) {
             // Update Pedro Pathing and Panels every iteration
@@ -181,26 +169,25 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 if (detection.metadata != null) {
                     //  Check to see if we want to track towards this tag.
                     if (detection.id == PPG_TAG_ID) {
-                        // call lines for the PGP pattern
+                        // call lines for the PPG pattern
                         buildPathsPPG();
                         targetFound = true;
                         desiredTag = detection;
-                        foundID = 21; // This should likely be PPG_TAG_ID or the corresponding state machine ID
+                        foundID = PPG_TAG_ID;
                         break;  // don't look any further.
                     } else if (detection.id == PGP_TAG_ID) {
                         // call lines for the PGP pattern
                         buildPathsPGP();
                         targetFound = true;
                         desiredTag = detection;
-                        foundID = 22; // This should likely be PGP_TAG_ID or the corresponding state machine ID
+                        foundID = PGP_TAG_ID;
                         break;  // don't look any further.
-
                     } else if (detection.id == GPP_TAG_ID) {
                         // call lines for the GPP pattern
                         buildPathsGPP();
                         targetFound = true;
                         desiredTag = detection;
-                        foundID = 23; // This should likely be GPP_TAG_ID or the corresponding state machine ID
+                        foundID = GPP_TAG_ID;
                         break;  // don't look any further.
                     }
                 } else {
@@ -209,16 +196,14 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 }
             }
 
-
             // Update the state machine
-            if (foundID == 21) { // Consider using the TAG_ID constants or a dedicated variable for which path was found
+            if (foundID == PPG_TAG_ID) {
                 updateStateMachinePPG();
-            } else if (foundID == 22) {
+            } else if (foundID == PGP_TAG_ID) {
                 updateStateMachinePGP();
-            } else if (foundID == 23) {
+            } else if (foundID == GPP_TAG_ID) {
                 updateStateMachineGPP();
             }
-
 
             // Log to Panels and driver station (custom log function)
             log("Elapsed", runtime.toString());
@@ -229,11 +214,9 @@ public class AprilTagPatternAuto extends LinearOpMode {
         }
     }
 
-
     public void buildPathsPPG() {
         // basically just plotting the points for the lines that score the PPG pattern
-
-            grabPPG = follower.pathBuilder() //
+        grabPPG = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, PPGPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), PPGPose.getHeading())
                 .build();
@@ -249,14 +232,12 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
     public void buildPathsPGP() {
         // basically just plotting the points for the lines that score the PGP pattern
-
-        // Move to the first artifact pickup pose from the start pose
-        grabPGP = follower.pathBuilder() // Changed from scorePGP to grabPGP
+        grabPGP = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, PGPPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), PGPPose.getHeading())
                 .build();
 
-            sleep(5000);
+        sleep(5000);
 
         // Move to the scoring pose from the first artifact pickup pose
         scorePGP = follower.pathBuilder()
@@ -267,14 +248,12 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
     public void buildPathsGPP() {
         // basically just plotting the points for the lines that score the GPP pattern
-
-        // Move to the first artifact pickup pose from the start pose
         grabGPP = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, GPPPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), GPPPose.getHeading())
                 .build();
 
-            sleep(5000);
+        sleep(5000);
 
         // Move to the scoring pose from the first artifact pickup pose
         scoreGPP = follower.pathBuilder()
@@ -283,19 +262,17 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .build();
     }
 
-    //below is the state machine or each pattern
-
+    //below is the state machine for each pattern
     public void updateStateMachinePPG() {
         switch (pathStatePPG) {
             case 0:
                 // Move to the scoring position from the start position
                 follower.followPath(grabPPG);
-                setpathStatePPG(1); // Call the setter method
+                setpathStatePPG(1);
                 break;
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-
                     // Move to the first artifact pickup location from the scoring position
                     follower.followPath(scorePPG);
                     setpathStatePPG(-1); //set it to -1 so it stops the state machine execution
@@ -304,47 +281,43 @@ public class AprilTagPatternAuto extends LinearOpMode {
         }
     }
 
-
     public void updateStateMachinePGP() {
         switch (pathStatePGP) {
             case 0:
                 // Move to the scoring position from the start position
                 follower.followPath(grabPGP);
-                setpathStatePGP(1); // Call the setter method
+                setpathStatePGP(1);
                 break;
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-
                     // Move to the first artifact pickup location from the scoring position
                     follower.followPath(scorePGP);
-                    setpathStatePGP(-1); // Call the setter for PGP
+                    setpathStatePGP(-1);
                 }
                 break;
         }
     }
-
 
     public void updateStateMachineGPP() {
         switch (pathStateGPP) {
             case 0:
                 // Move to the scoring position from the start position
                 follower.followPath(grabGPP);
-                setpathStateGPP(1); // Call the setter method
+                setpathStateGPP(1);
                 break;
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-
                     // Move to the first artifact pickup location from the scoring position
-                    follower.followPath();
+                    follower.followPath(scoreGPP);
                     setpathStateGPP(-1); //set it to -1 so it stops the state machine execution
                 }
                 break;
         }
     }
 
-    // Setter methods for pathState variables placed at the class level
+    // Setter methods for pathState variables
     void setpathStatePPG(int newPathState) {
         this.pathStatePPG = newPathState;
     }
@@ -356,7 +329,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
     void setpathStateGPP(int newPathState) {
         this.pathStateGPP = newPathState;
     }
-
 
     /**
      * start the AprilTag processor.
@@ -388,7 +360,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
     */
     private void setManualExposure(int exposureMS, int gain) {
         // Wait for the camera to be open, then use the controls
-
         if (visionPortal == null) {
             return;
         }
@@ -415,4 +386,3 @@ public class AprilTagPatternAuto extends LinearOpMode {
         // sleep(20);
     }
 }
-
