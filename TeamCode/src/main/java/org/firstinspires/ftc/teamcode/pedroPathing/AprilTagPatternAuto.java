@@ -14,7 +14,7 @@ say "if the numeric value is 21, then run the GPP pathbuilder" and so on. Right 
 designated function and call the function in whichever part of the pathbuilder it is needed. I hope this helps!
 */
 
-package org.firstinspires.ftc.teamcode.examples;
+package org.firstinspires.ftc.teamcode;
 
 // FTC SDK
 
@@ -80,9 +80,14 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
     private int foundID; // Current state machine value, dictates which one to run
 
+    // Declare motors (but don't initialize yet)
     public DcMotorEx intakeWheels = null;
     public DcMotorEx shooterLeft = null;
     public DcMotorEx shooterRight = null;
+    public DcMotorEx frontLeft = null;
+    public DcMotorEx backLeft = null;
+    public DcMotorEx frontRight = null;
+    public DcMotorEx backRight = null;
 
     // Custom logging function to support telemetry and Panels
     private void log(String caption, Object... text) {
@@ -103,6 +108,8 @@ public class AprilTagPatternAuto extends LinearOpMode {
     // a place to put your intake and shooting functions
     public void intakeArtifacts() {
         intakeWheels.setPower(-1);
+        sleep(2000); // spin for 2 seconds
+        intakeWheels.setPower(0); // stop intake
     }
 
     public void shootArtifacts() {
@@ -115,8 +122,11 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
             // Stop intake
             intakeWheels.setPower(0);
-            sleep(5000); // stop for 5 seconds
+            sleep(500); // stop for 0.5 seconds
         }
+        // Stop shooters after done
+        shooterLeft.setPower(0);
+        shooterRight.setPower(0);
     }
 
     @Override
@@ -127,6 +137,36 @@ public class AprilTagPatternAuto extends LinearOpMode {
         // Initialize Pedro Pathing follower
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startPose);
+
+        // Initialize hardware here (inside runOpMode)
+        frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
+        backLeft = hardwareMap.get(DcMotorEx.class, "backLeft");
+        frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
+        backRight = hardwareMap.get(DcMotorEx.class, "backRight");
+
+        shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
+        shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
+        intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
+
+        // Set motor directions
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);
+        backLeft.setDirection(DcMotor.Direction.REVERSE);
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setDirection(DcMotor.Direction.FORWARD);
+
+        shooterLeft.setDirection(DcMotor.Direction.FORWARD);
+        shooterRight.setDirection(DcMotor.Direction.REVERSE);
+
+        // Set zero power behavior
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         boolean targetFound = false;    // Set to true when an AprilTag target is detected
         initAprilTag();
@@ -146,13 +186,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
         setpathStatePPG(0);
         setpathStatePGP(0);
         setpathStateGPP(0);
-        runtime.reset();
-
-        intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
-        shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
-        shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
-        shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         while (opModeIsActive()) {
             // Update Pedro Pathing and Panels every iteration
@@ -221,8 +254,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), PPGPose.getHeading())
                 .build();
 
-        sleep(5000);
-
         // Move to the scoring pose from the first artifact pickup pose
         scorePPG = follower.pathBuilder()
                 .addPath(new BezierLine(PPGPose, scorePose))
@@ -237,8 +268,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .setLinearHeadingInterpolation(startPose.getHeading(), PGPPose.getHeading())
                 .build();
 
-        sleep(5000);
-
         // Move to the scoring pose from the first artifact pickup pose
         scorePGP = follower.pathBuilder()
                 .addPath(new BezierLine(PGPPose, scorePose))
@@ -252,8 +281,6 @@ public class AprilTagPatternAuto extends LinearOpMode {
                 .addPath(new BezierLine(startPose, GPPPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), GPPPose.getHeading())
                 .build();
-
-        sleep(5000);
 
         // Move to the scoring pose from the first artifact pickup pose
         scoreGPP = follower.pathBuilder()
@@ -273,8 +300,18 @@ public class AprilTagPatternAuto extends LinearOpMode {
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-                    // Move to the first artifact pickup location from the scoring position
+                    // Run intake while moving
+                    intakeArtifacts();
+                    // Move to the scoring location
                     follower.followPath(scorePPG);
+                    setpathStatePPG(2);
+                }
+                break;
+            case 2:
+                // Wait until at scoring position
+                if (!follower.isBusy()) {
+                    // Shoot the artifacts
+                    shootArtifacts();
                     setpathStatePPG(-1); //set it to -1 so it stops the state machine execution
                 }
                 break;
@@ -291,8 +328,18 @@ public class AprilTagPatternAuto extends LinearOpMode {
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-                    // Move to the first artifact pickup location from the scoring position
+                    // Run intake while moving
+                    intakeArtifacts();
+                    // Move to the scoring location
                     follower.followPath(scorePGP);
+                    setpathStatePGP(2);
+                }
+                break;
+            case 2:
+                // Wait until at scoring position
+                if (!follower.isBusy()) {
+                    // Shoot the artifacts
+                    shootArtifacts();
                     setpathStatePGP(-1);
                 }
                 break;
@@ -309,8 +356,18 @@ public class AprilTagPatternAuto extends LinearOpMode {
             case 1:
                 // Wait until we have passed all path constraints
                 if (!follower.isBusy()) {
-                    // Move to the first artifact pickup location from the scoring position
+                    // Run intake while moving
+                    intakeArtifacts();
+                    // Move to the scoring location
                     follower.followPath(scoreGPP);
+                    setpathStateGPP(2);
+                }
+                break;
+            case 2:
+                // Wait until at scoring position
+                if (!follower.isBusy()) {
+                    // Shoot the artifacts
+                    shootArtifacts();
                     setpathStateGPP(-1); //set it to -1 so it stops the state machine execution
                 }
                 break;
