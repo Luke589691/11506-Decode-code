@@ -12,6 +12,11 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 @TeleOp(name = "Limelight testing")
 public class limelight extends LinearOpMode {
 
+    @Override
+    public void waitForStart() {
+        super.waitForStart();
+    }
+
     Limelight3A limelight;
     @Override
 

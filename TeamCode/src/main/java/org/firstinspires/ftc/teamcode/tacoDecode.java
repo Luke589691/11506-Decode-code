@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name = "Taco Decode")
 public class tacoDecode extends LinearOpMode {
@@ -15,6 +16,9 @@ public class tacoDecode extends LinearOpMode {
 
     public DcMotorEx shooterLeft = null;
     public DcMotorEx shooterRight = null;
+    public Servo Limelightspin = null;
+    public Servo Limelighttilt = null;
+
 
     double shooterLeftPower = 0.0;
     double shooterRightPower = 0.0;
@@ -46,6 +50,9 @@ public class tacoDecode extends LinearOpMode {
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Limelightspin = hardwareMap.get(Servo.class, "Limelightspin");
+        Limelighttilt = hardwareMap.get(Servo.class, "Limelighttilt");
 
 
         intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
@@ -95,11 +102,11 @@ public class tacoDecode extends LinearOpMode {
             backRight.setPower(backRightPower);
 
             if (gamepad1.leftBumperWasPressed() && !humanPlayerMode) {
-                    shooterLeftPower -= 0.05;
-                    shooterRightPower -= 0.05;
+                shooterLeftPower -= 0.05;
+                shooterRightPower -= 0.05;
 
-                    if (shooterLeftPower < 0.0) shooterLeftPower = 1.0;
-                    if (shooterRightPower < 0.0) shooterRightPower = 1.0;
+                if (shooterLeftPower < 0.0) shooterLeftPower = 1.0;
+                if (shooterRightPower < 0.0) shooterRightPower = 1.0;
             }
 
             if (gamepad1.rightBumperWasPressed() && !humanPlayerMode) {
@@ -118,7 +125,7 @@ public class tacoDecode extends LinearOpMode {
                 if (shooterRightPower < 0.0) shooterRightPower = 1.0;
             }
 
-            if (gamepad1.dpadRightWasPressed() && !humanPlayerMode){
+            if (gamepad1.dpadRightWasPressed() && !humanPlayerMode) {
                 shooterLeftPower += 0.01;
                 shooterRightPower += 0.01;
 
@@ -195,7 +202,7 @@ public class tacoDecode extends LinearOpMode {
                 shooterLeftPower = 0;
             }
 
-            if (gamepad1.a && humanPlayerMode) {
+            //if (gamepad1.a && humanPlayerMode) {
                 shooterRightPower = -0.5;
                 shooterLeftPower = -0.5;
 
@@ -206,10 +213,15 @@ public class tacoDecode extends LinearOpMode {
                 intakeWheels.setPower(intakeWheelsPower);
             }
 
-            telemetry.addData("FL", "%.2f", frontLeftPower);
-            telemetry.addData("BL", "%.2f", backLeftPower);
-            telemetry.addData("FR", "%.2f", frontRightPower);
-            telemetry.addData("BR", "%.2f", backRightPower);
+
+                Limelightspin.setPosition(1);
+                Limelighttilt.setPosition(0.0);
+
+
+            //telemetry.addData("FL", "%.2f", frontLeftPower);
+            //telemetry.addData("BL", "%.2f", backLeftPower);
+            //telemetry.addData("FR", "%.2f", frontRightPower);
+            //telemetry.addData("BR", "%.2f", backRightPower);
             telemetry.addData("shooter counts/s", "%.2f", shooterRight.getVelocity());
             telemetry.addData("shooter", "%.2f", shooterRightPower);
             telemetry.addData("shooter actual", "%.2f", shooterRight.getPower());
@@ -217,8 +229,13 @@ public class tacoDecode extends LinearOpMode {
             telemetry.addData("intake power actual", "%.2f", intakeWheels.getPower());
             telemetry.addData("Human Player Mode", "%b", humanPlayerMode);
             telemetry.addData("Shooter Mode", "%d", shooterMode);
+            telemetry.addLine("hi");
 
             telemetry.update();
         }
     }
-}
+
+//}
+
+
+
