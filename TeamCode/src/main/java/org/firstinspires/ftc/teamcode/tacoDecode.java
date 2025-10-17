@@ -29,7 +29,6 @@ public class tacoDecode extends LinearOpMode {
 
     boolean lastYPress = false;
     boolean lastXPress = false;
-//    boolean shooterRunning = false;
     int shooterMode = 0;
 
     boolean humanPlayerMode = false;
@@ -207,7 +206,7 @@ public class tacoDecode extends LinearOpMode {
                 intakeWheels.setPower(intakeWheelsPower);
             }
 
-            telemetry.addData("FL", "%.2f", frontLeftPower)
+            telemetry.addData("FL", "%.2f", frontLeftPower);
             telemetry.addData("BL", "%.2f", backLeftPower);
             telemetry.addData("FR", "%.2f", frontRightPower);
             telemetry.addData("BR", "%.2f", backRightPower);
