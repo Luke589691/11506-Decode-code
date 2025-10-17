@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp(name = "Taco Decode")
 public class tacoDecode extends LinearOpMode {
@@ -28,7 +29,7 @@ public class tacoDecode extends LinearOpMode {
 
     boolean lastYPress = false;
     boolean lastXPress = false;
-    boolean shooterRunning = false;
+//    boolean shooterRunning = false;
     int shooterMode = 0;
 
     boolean humanPlayerMode = false;
@@ -42,7 +43,7 @@ public class tacoDecode extends LinearOpMode {
 
         shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
         shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
-        shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -126,27 +127,33 @@ public class tacoDecode extends LinearOpMode {
                 if (shooterRightPower > 1.0) shooterRightPower = 0.0;
             }
 
-            if (gamepad1.x && !humanPlayerMode) { //todo make it a toggle as well like the intake
+            if (gamepad1.x && !lastXPress && !humanPlayerMode) { //todo fix toggle
+                if (shooterMode == 2) {
+                    shooterMode = 0;
+                } else {
+                    shooterMode = 2;
+                }
+            }
+            lastXPress = gamepad1.x;
+
+            if (shooterMode == 2) {
                 shooterRight.setPower(shooterRightPower);
                 shooterLeft.setPower(shooterLeftPower);
-            }
-            else {
+            } else {
                 shooterRight.setPower(0);
                 shooterLeft.setPower(0);
             }
 
             if (gamepad1.y && !lastYPress && !humanPlayerMode) {
-                if (shooterRunning && shooterMode == 1) {
-                    shooterRunning = false;
+                if (shooterMode == 1) {
                     shooterMode = 0;
                 } else {
-                    shooterRunning = true;
                     shooterMode = 1;
                 }
             }
             lastYPress = gamepad1.y;
 
-            if (shooterRunning && shooterMode == 1) {
+            if (shooterMode == 1) {
                 shooterRightPower = 0.62;
                 shooterLeftPower = 0.62;
                 shooterRight.setPower(shooterRightPower);
@@ -157,7 +164,7 @@ public class tacoDecode extends LinearOpMode {
             }
 
 
-            if (gamepad1.a && !lastAPress && !humanPlayerMode) {
+            if (gamepad1.a && !lastAPress && !humanPlayerMode) { //todo make dpad left on for 1 sec off for 1 sec 3x for intake 3 balls
                 if (intakeRunning && intakeWheelsPower == -1.0) {
                     intakeRunning = false;
                 } else {
@@ -200,8 +207,7 @@ public class tacoDecode extends LinearOpMode {
                 intakeWheels.setPower(intakeWheelsPower);
             }
 
-
-            telemetry.addData("FL", "%.2f", frontLeftPower);
+            telemetry.addData("FL", "%.2f", frontLeftPower)
             telemetry.addData("BL", "%.2f", backLeftPower);
             telemetry.addData("FR", "%.2f", frontRightPower);
             telemetry.addData("BR", "%.2f", backRightPower);
@@ -211,6 +217,8 @@ public class tacoDecode extends LinearOpMode {
             telemetry.addData("intake power", "%.2f", intakeWheelsPower);
             telemetry.addData("intake power actual", "%.2f", intakeWheels.getPower());
             telemetry.addData("Human Player Mode", "%b", humanPlayerMode);
+            telemetry.addData("Shooter Mode", "%d", shooterMode);
+
             telemetry.update();
         }
     }
