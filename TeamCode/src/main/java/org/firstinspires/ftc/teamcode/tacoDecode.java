@@ -555,22 +555,20 @@ public class tacoDecode extends LinearOpMode {
                 spinSpeed = Math.signum(spinSpeed) * MIN_SPEED;
             }
 
-            // Limit maximum speed
             spinSpeed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, spinSpeed));
             Limelightspin.setPosition(0.5 + spinSpeed);
             spinPosition = 0.5 + spinSpeed;
         } else {
-            Limelightspin.setPosition(0.5); // Stop at center
+            Limelightspin.setPosition(0.5);
             spinPosition = 0.5;
-            smoothedXError = 0.0;  // Reset smoothing when stopped
-        }
+            smoothedXError = 0.0;
 
-        // Control tilt (standard servo with limited range)
+        //tilt
         if (Math.abs(finalYError) > 0.3) {
             double tiltAdjustment = -finalYError * TILT_GAIN;
             tiltPosition += tiltAdjustment;
 
-            // Clamp tilt to allowed range (0.0 to 0.2)
+            //allowed range (0.0 to 0.2)
             tiltPosition = Math.max(TILT_MIN, Math.min(TILT_MAX, tiltPosition));
             Limelighttilt.setPosition(tiltPosition);
         }
@@ -581,39 +579,24 @@ public class tacoDecode extends LinearOpMode {
         telemetry.addData("Tag Center Y", "%.0f", detection.center.y);
     }
 
-    /**
-     * Apply battery voltage compensation to shooter power
-     * Compensates for voltage drop as battery drains to maintain consistent shot distance
-     * @param basePower the calculated power without compensation
-     * @return compensated power value
-     */
     private double applyBatteryCompensation(double basePower) {
-        // Get current battery voltage
         double currentVoltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
 
-        // Don't compensate if voltage is too low (battery is dying)
+        //(battery is dying)
         if (currentVoltage < MIN_VOLTAGE) {
             telemetry.addData("WARNING", "Battery voltage critically low!");
             return basePower;
         }
 
-        // Calculate voltage ratio (current voltage / nominal voltage)
-        // If battery is at 12V and nominal is 13V, ratio = 12/13 = 0.923
         double voltageRatio = currentVoltage / NOMINAL_VOLTAGE;
 
-        // Compensate by increasing power inversely to voltage drop
-        // If voltage is lower, we need more power to maintain same speed
-        // Power is proportional to voltage, so we divide by the ratio
         double compensatedPower = basePower / voltageRatio;
 
-        // Additional compensation factor for motor efficiency losses
-        // Motors are less efficient at lower voltages, so add extra boost
         if (voltageRatio < 0.95) {
             double efficiencyLoss = (1.0 - voltageRatio) * 0.15; // 15% extra per volt lost
             compensatedPower += efficiencyLoss;
         }
 
-        // Clamp to safe maximum
         compensatedPower = Math.min(1.0, compensatedPower);
 
         telemetry.addData("Voltage Ratio", "%.3f", voltageRatio);
