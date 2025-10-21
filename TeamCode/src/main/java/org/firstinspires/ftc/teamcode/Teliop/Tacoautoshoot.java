@@ -16,7 +16,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
 @TeleOp(name = "Taco Decode - AprilTag Auto")
-public class tacoDecode extends LinearOpMode {
+public class Tacoautoshoot  extends LinearOpMode {
     public DcMotorEx frontLeft = null;
     public DcMotorEx backLeft = null;
     public DcMotorEx frontRight = null;
@@ -65,7 +65,7 @@ public class tacoDecode extends LinearOpMode {
     private static final double TARGET_HEIGHT_ABOVE_TAG = 0.10; // 30 cm in meters
     private static final double GRAVITY = 9.81; // m/s^2
     private static final double SHOOTER_HEIGHT = 0.30; // Adjust based on your robot's shooter height in meters
-    private static final double APRILTAG_HEIGHT = 0.70x; // Standard AprilTag height in meters
+    private static final double APRILTAG_HEIGHT = 0.70; // Standard AprilTag height in meters
 
     @Override
     public void runOpMode() {
