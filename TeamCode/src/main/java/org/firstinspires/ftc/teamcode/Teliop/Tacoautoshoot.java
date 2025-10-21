@@ -1,24 +1,22 @@
-package org.firstinspires.ftc.teamcode.Teliop;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 
-@TeleOp(name = "Taco auto shoot", group="test  ")
-public class Tacoautoshoot extends LinearOpMode {
+@TeleOp(name = "Taco Decode - AprilTag Auto")
+public class tacoDecode extends LinearOpMode {
     public DcMotorEx frontLeft = null;
     public DcMotorEx backLeft = null;
     public DcMotorEx frontRight = null;
@@ -44,10 +42,6 @@ public class Tacoautoshoot extends LinearOpMode {
     boolean lastYPress = false;
     boolean lastXPress = false;
     int shooterMode = 0;
-    // Mode 0: Off
-    // Mode 1: Fixed 60%
-    // Mode 2: Manual adjustment (X button toggle)
-    // Mode 3: Auto-aim (Y button)
 
     boolean humanPlayerMode = false;
 
@@ -66,12 +60,13 @@ public class Tacoautoshoot extends LinearOpMode {
     private AprilTagProcessor aprilTag;
     private boolean autoAimEnabled = false;
     private double targetDistance = 0.0;
-    
+
     // Constants for shooter power calculation
-    private static final double TARGET_HEIGHT_ABOVE_TAG = 0.30; // 30 cm in meters
-    private static final double SHOOTER_HEIGHT = 0.45;
-    private static final double APRILTAG_HEIGHT = 0.15;
-    
+    private static final double TARGET_HEIGHT_ABOVE_TAG = 0.10; // 30 cm in meters
+    private static final double GRAVITY = 9.81; // m/s^2
+    private static final double SHOOTER_HEIGHT = 0.30; // Adjust based on your robot's shooter height in meters
+    private static final double APRILTAG_HEIGHT = 0.70x; // Standard AprilTag height in meters
+
     @Override
     public void runOpMode() {
         frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
@@ -184,10 +179,10 @@ public class Tacoautoshoot extends LinearOpMode {
                 if (shooterRightPower > 1.0) shooterRightPower = 0.0;
             }
 
-            // X button - Manual shooter mode (original behavior)
             if (gamepad1.x && !lastXPress && !humanPlayerMode) {
                 if (shooterMode == 2) {
                     shooterMode = 0;
+                    autoAimEnabled = false;
                 } else {
                     shooterMode = 2;
                     autoAimEnabled = false;
@@ -195,38 +190,39 @@ public class Tacoautoshoot extends LinearOpMode {
             }
             lastXPress = gamepad1.x;
 
-            // Y button - Auto-aim mode
+            // Y button now enables AprilTag auto-aim mode
             if (gamepad1.y && !lastYPress && !humanPlayerMode) {
                 if (autoAimEnabled) {
+                    // Turn off auto-aim
                     autoAimEnabled = false;
                     shooterMode = 0;
                 } else {
+                    // Enable auto-aim mode
                     autoAimEnabled = true;
-                    shooterMode = 3;
+                    shooterMode = 3; // New mode for auto-aim
                 }
             }
             lastYPress = gamepad1.y;
 
             // Handle shooter modes
             if (autoAimEnabled && shooterMode == 3) {
-                // Auto-aim mode
+                // Auto-aim mode - calculate shooter power based on AprilTag distance
                 double calculatedPower = calculateShooterPower();
-                
+
                 if (calculatedPower > 0) {
                     shooterLeftPower = calculatedPower;
                     shooterRightPower = calculatedPower;
                     shooterRight.setPower(shooterRightPower);
                     shooterLeft.setPower(shooterLeftPower);
                 } else {
+                    // No AprilTag detected, maintain current power or stop
                     shooterRight.setPower(0);
                     shooterLeft.setPower(0);
                 }
             } else if (shooterMode == 2) {
-                // Manual mode - use bumpers/dpad to adjust
                 shooterRight.setPower(shooterRightPower);
                 shooterLeft.setPower(shooterLeftPower);
             } else if (shooterMode == 1) {
-                // Fixed 60% mode
                 shooterRightPower = 0.60;
                 shooterLeftPower = 0.60;
                 shooterRight.setPower(shooterRightPower);
@@ -335,7 +331,8 @@ public class Tacoautoshoot extends LinearOpMode {
             telemetry.addData("Color Total", "%d", colorSensor.red() + colorSensor.green() + colorSensor.blue());
             telemetry.update();
         }
-        
+
+        // Close vision portal when done
         visionPortal.close();
     }
 
@@ -343,20 +340,8 @@ public class Tacoautoshoot extends LinearOpMode {
      * Initialize AprilTag detection processor
      */
     private void initAprilTag() {
-        // Create custom AprilTag library for 210mm x 210mm tags
-        double tagSize = 0.21; // 210mm in meters
-        
-        AprilTagLibrary.Builder tagLibraryBuilder = new AprilTagLibrary.Builder();
-        tagLibraryBuilder.addTag(20, "Target Tag 20", tagSize, DistanceUnit.METER);
-        tagLibraryBuilder.addTag(24, "Target Tag 24", tagSize, DistanceUnit.METER);
-        
-        AprilTagLibrary customTagLibrary = tagLibraryBuilder.build();
-        
-        // Create the AprilTag processor with custom tag library
+        // Create the AprilTag processor
         aprilTag = new AprilTagProcessor.Builder()
-                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
-                .setTagLibrary(customTagLibrary)
-                .setOutputUnits(DistanceUnit.METER, AngleUnit.DEGREES)
                 .build();
 
         // Create the vision portal using the webcam
@@ -369,12 +354,11 @@ public class Tacoautoshoot extends LinearOpMode {
     /**
      * Calculate shooter power based on distance to AprilTag
      * Aims 30 cm above the AprilTag
-     * Uses a simple linear interpolation based on distance
      * @return calculated shooter power (0.0 to 1.0), or 0 if no tag detected
      */
     private double calculateShooterPower() {
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-        
+
         if (currentDetections == null || currentDetections.isEmpty()) {
             telemetry.addData("AprilTag", "No tags detected");
             targetDistance = 0.0;
@@ -383,62 +367,57 @@ public class Tacoautoshoot extends LinearOpMode {
 
         // Use the first detected AprilTag
         AprilTagDetection detection = currentDetections.get(0);
-        
-        // Get range (distance) from robot to tag in meters
-        targetDistance = detection.ftcPose.range;
-        
+
+        // Get range (distance) from robot to tag
+        targetDistance = detection.ftcPose.range; // Distance in meters
+        double bearing = Math.toRadians(detection.ftcPose.bearing); // Angle to tag
+        double elevation = Math.toRadians(detection.ftcPose.elevation); // Vertical angle
+
+        // Calculate actual horizontal distance (accounting for angle)
+        double horizontalDistance = targetDistance * Math.cos(elevation);
+
         // Calculate height difference
+        // Target is 30cm above the AprilTag
         double targetHeight = APRILTAG_HEIGHT + TARGET_HEIGHT_ABOVE_TAG;
         double heightDifference = targetHeight - SHOOTER_HEIGHT;
-        
-        // Simple distance-based power mapping
-        double[][] powerMap = {
-            {0.5, 0.35},
-            {1.0, 0.45},
-            {1.5, 0.55},
-            {2.0, 0.65},
-            {2.5, 0.75},
-            {3.0, 0.85},
-            {3.5, 0.95},
-            {4.0, 1.00}
-        };
-        
-        double calculatedPower = 0.5;
-        
-        // Linear interpolation between calibration points
-        if (targetDistance <= powerMap[0][0]) {
-            calculatedPower = powerMap[0][1];
-        } else if (targetDistance >= powerMap[powerMap.length - 1][0]) {
-            calculatedPower = powerMap[powerMap.length - 1][1];
+
+        // Physics calculation for projectile motion
+        // Using: v = sqrt((g * d^2) / (2 * cos^2(θ) * (d * tan(θ) - h)))
+        // Simplified for horizontal launch: v = sqrt(g * d^2 / (2 * h))
+
+        double requiredVelocity;
+        if (heightDifference > 0) {
+            // Shooting upward
+            double angle = Math.atan2(heightDifference, horizontalDistance);
+            requiredVelocity = Math.sqrt(
+                    (GRAVITY * horizontalDistance * horizontalDistance) /
+                            (2 * Math.cos(angle) * Math.cos(angle) *
+                                    (horizontalDistance * Math.tan(angle) - heightDifference))
+            );
         } else {
-            for (int i = 0; i < powerMap.length - 1; i++) {
-                if (targetDistance >= powerMap[i][0] && targetDistance <= powerMap[i + 1][0]) {
-                    double d1 = powerMap[i][0];
-                    double p1 = powerMap[i][1];
-                    double d2 = powerMap[i + 1][0];
-                    double p2 = powerMap[i + 1][1];
-                    
-                    calculatedPower = p1 + (targetDistance - d1) * (p2 - p1) / (d2 - d1);
-                    break;
-                }
-            }
+            // Shooting downward or level
+            requiredVelocity = Math.sqrt(
+                    (GRAVITY * horizontalDistance * horizontalDistance) /
+                            (2 * Math.abs(heightDifference))
+            );
         }
-        
-        // Add slight adjustment for height difference
-        if (heightDifference > 0.1) {
-            calculatedPower += heightDifference * 0.1;
-        } else if (heightDifference < -0.1) {
-            calculatedPower -= Math.abs(heightDifference) * 0.05;
-        }
-        
-        // Clamp power between safe limits
-        calculatedPower = Math.max(0.30, Math.min(1.0, calculatedPower));
-        
+
+        // Convert velocity to motor power
+        // This is a rough estimation - you'll need to calibrate this for your robot
+        // Assuming max velocity at power 1.0 is about 5 m/s (adjust based on testing)
+        double maxVelocity = 5.0; // meters per second at full power
+        double calculatedPower = requiredVelocity / maxVelocity;
+
+        // Clamp power between reasonable limits
+        calculatedPower = Math.max(0.3, Math.min(1.0, calculatedPower));
+
         telemetry.addData("AprilTag ID", detection.id);
         telemetry.addData("Distance", "%.2f m", targetDistance);
+        telemetry.addData("Horizontal Dist", "%.2f m", horizontalDistance);
         telemetry.addData("Height Diff", "%.2f m", heightDifference);
+        telemetry.addData("Required Velocity", "%.2f m/s", requiredVelocity);
         telemetry.addData("Calculated Power", "%.2f", calculatedPower);
-        
+
         return calculatedPower;
     }
 }
