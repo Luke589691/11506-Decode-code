@@ -17,7 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 
-@TeleOp(name = "Taco auto shoot")
+@TeleOp(name = "Taco auto shoot", group="test  ")
 public class Tacoautoshoot extends LinearOpMode {
     public DcMotorEx frontLeft = null;
     public DcMotorEx backLeft = null;

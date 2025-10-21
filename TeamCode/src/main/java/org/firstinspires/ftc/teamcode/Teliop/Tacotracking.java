@@ -17,7 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 
-@TeleOp(name = "Taco tracking")
+@TeleOp(name = "Taco tracking", group = "test")
 public class Tacotracking extends LinearOpMode {
     public DcMotorEx frontLeft = null;
     public DcMotorEx backLeft = null;
