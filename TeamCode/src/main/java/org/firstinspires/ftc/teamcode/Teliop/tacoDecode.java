@@ -53,7 +53,7 @@ public class tacoDecode extends LinearOpMode {
 
     // BATTERY COMPENSATION - Simple power boost when battery is low
     private static final double LOW_BATTERY_THRESHOLD = 12.0;  // Volts - when to start boosting
-    private static final double BATTERY_POWER_BOOST = 0.08;    // Extra power added when below threshold
+    private static final double BATTERY_POWER_BOOST = 0.1;    // Extra power added when below threshold
     private static final boolean ENABLE_BATTERY_BOOST = true;  // Set to false to disable
 
     // HEIGHT COMPENSATION
