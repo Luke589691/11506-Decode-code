@@ -48,7 +48,7 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
     // Initialize poses
     private final Pose startPose = new Pose(72, 120, Math.toRadians(90)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(72, 20, Math.toRadians(115)); // Scoring Pose of our robot. It is facing the goal at a 115 degree angle.
+    private final Pose scorePose = new Pose(60, 30, Math.toRadians(-17)); // Scoring Pose of our robot. It is facing the goal at a 115 degree angle.
     private final Pose PPGPose = new Pose(100, 83.5, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose PGPPose = new Pose(100, 59.5, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
     private final Pose GPPPose = new Pose(100, 35.5, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
@@ -113,11 +113,14 @@ public class AprilTagPatternAuto extends LinearOpMode {
     }
 
     public void shootArtifacts() {
-        shooterLeft.setPower(0.7);
-        shooterRight.setPower(0.7);
+        //intakeWheels.setPower(1);
+        //sleep(500);
+        shooterLeft.setPower(0.62);
+        shooterRight.setPower(0.62);
+        sleep(3000);
         for (int i = 0; i < 3; i++) {  // repeat 3 times
             // Spin intake
-            intakeWheels.setPower(1.0);
+            intakeWheels.setPower(-1.0);
             sleep(2000); // spin for 2 seconds
 
             // Stop intake
