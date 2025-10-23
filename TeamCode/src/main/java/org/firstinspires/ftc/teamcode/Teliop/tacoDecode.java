@@ -53,7 +53,7 @@ public class tacoDecode extends LinearOpMode {
 
     // BATTERY COMPENSATION - Simple power boost when battery is low
     private static final double LOW_BATTERY_THRESHOLD = 12.0;  // Volts - when to start boosting
-    private static final double BATTERY_POWER_BOOST = 0.1;    // Extra power added when below threshold
+    private static final double BATTERY_POWER_BOOST = 10;    // Extra power added when below threshold
     private static final boolean ENABLE_BATTERY_BOOST = true;  // Set to false to disable
 
     // HEIGHT COMPENSATION
@@ -158,6 +158,10 @@ public class tacoDecode extends LinearOpMode {
         shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
         shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
         intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
+        frontLeftMotor = hardwareMap.dcMotor.get("frontLeftMotor");
+        backLeftMotor = hardwareMap.dcMotor.get(DcMotorEx.class, "backLeft");
+        frontRightMotor = hardwareMap.dcMotor.get("frontRight");
+        backRightMotor = hardwareMap.dcMotor.get("backRight");
         Limelightspin = hardwareMap.get(Servo.class, "Limelightspin");
         Limelighttilt = hardwareMap.get(Servo.class, "Limelighttilt");
         colorSensor = hardwareMap.get(ColorSensor.class, "colorSensor");
