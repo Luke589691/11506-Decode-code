@@ -48,7 +48,7 @@ public class AprilTagPatternAuto extends LinearOpMode {
 
     // Initialize poses
     private final Pose startPose = new Pose(72, 120, Math.toRadians(90)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(60, 30, Math.toRadians(-17)); // Scoring Pose of our robot. It is facing the goal at a 115 degree angle.
+    private final Pose scorePose = new Pose(60, 30, Math.toRadians(-20)); // Scoring Pose of our robot. It is facing the goal at a 115 degree angle.
     private final Pose PPGPose = new Pose(100, 83.5, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose PGPPose = new Pose(100, 59.5, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
     private final Pose GPPPose = new Pose(100, 35.5, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
@@ -108,24 +108,24 @@ public class AprilTagPatternAuto extends LinearOpMode {
     // a place to put your intake and shooting functions
     public void intakeArtifacts() {
         intakeWheels.setPower(-1);
-        sleep(2000); // spin for 2 seconds
+        sleep(3000); // spin for 2 seconds
         intakeWheels.setPower(0); // stop intake
     }
 
     public void shootArtifacts() {
         //intakeWheels.setPower(1);
         //sleep(500);
-        shooterLeft.setPower(0.62);
-        shooterRight.setPower(0.62);
+        shooterLeft.setPower(0.57);
+        shooterRight.setPower(0.57);
         sleep(3000);
-        for (int i = 0; i < 3; i++) {  // repeat 3 times
+        for (int i = 0; i < 6; i++) {  // repeat 3 times
             // Spin intake
             intakeWheels.setPower(-1.0);
-            sleep(2000); // spin for 2 seconds
+            sleep(200); // spin for 2 seconds
 
             // Stop intake
             intakeWheels.setPower(0);
-            sleep(500); // stop for 0.5 seconds
+            sleep(1500); // stop for 0.5 seconds
         }
         // Stop shooters after done
         shooterLeft.setPower(0);
