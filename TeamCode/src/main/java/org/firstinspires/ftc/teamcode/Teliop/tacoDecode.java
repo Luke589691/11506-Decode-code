@@ -59,7 +59,7 @@ public class tacoDecode extends LinearOpMode {
 
     // BATTERY COMPENSATION - Simple power boost when battery is low
     private static final double LOW_BATTERY_THRESHOLD = 12.0;  // Volts - when to start boosting
-    private static final double BATTERY_POWER_BOOST = 10;    // Extra power added when below threshold
+    private static final double BATTERY_POWER_BOOST = 0.1;     // Extra power added when below threshold
     private static final boolean ENABLE_BATTERY_BOOST = true;  // Set to false to disable
 
     // HEIGHT COMPENSATION
@@ -87,6 +87,11 @@ public class tacoDecode extends LinearOpMode {
     private static final double TILT_MIN = 0.0;
     private static final double TILT_MAX = 0.2;
     private static final double SPIN_CENTER = 0.5;
+
+    // PIVOT SERVO SETTINGS
+    private static final double PIVOT_MIN = 0.0;      // Minimum pivot angle (flat/down)
+    private static final double PIVOT_MAX = 1.0;      // Maximum pivot angle (up)
+    private static final double PIVOT_DEFAULT = 0.3;  // Default position when not auto-aiming
 
     // PHYSICAL MEASUREMENTS (in meters)
     private static final double APRILTAG_HEIGHT = 0.33;          // Height of AprilTag center from ground
@@ -213,12 +218,13 @@ public class tacoDecode extends LinearOpMode {
         // Initialize vision
         initAprilTag();
 
-        telemetry.addData("Status", "Initialized");
+        telemetry.addData("Status", "Initialized - AprilTag Vision Ready");
         telemetry.addData("Controls", "L-Stick: Drive | R-Stick: Turn");
         telemetry.addData("X", "Manual Shooter | Y: Auto-Aim");
         telemetry.addData("Bumpers", "Speed ±0.05 | DPad L/R: ±0.01");
         telemetry.addData("DPad Up", "Rapid Shoot | DPad Down: Human Player");
         telemetry.addData("A/B", "Intake Control");
+        telemetry.addData("Camera", "640x480 with visual overlays enabled");
         telemetry.update();
 
         waitForStart();
@@ -473,6 +479,26 @@ public class tacoDecode extends LinearOpMode {
             // TELEMETRY
             // ========================================
             boolean batteryBoostActive = ENABLE_BATTERY_BOOST && currentVoltage < LOW_BATTERY_THRESHOLD;
+
+            // Show AprilTag detection info
+            List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+            int detectedTagCount = (currentDetections != null) ? currentDetections.size() : 0;
+
+            telemetry.addData("=== APRILTAG VISION ===", "");
+            telemetry.addData("Tags Detected", detectedTagCount);
+            if (detectedTagCount > 0 && currentDetections != null) {
+                AprilTagDetection detection = currentDetections.get(0);
+                telemetry.addData("Active Tag ID", detection.id);
+                telemetry.addData("Tag Position", "X:%.1f Y:%.1f Z:%.1f cm",
+                        detection.ftcPose.x * 100,
+                        detection.ftcPose.y * 100,
+                        detection.ftcPose.z * 100);
+                telemetry.addData("Tag Angles", "P:%.1f R:%.1f Y:%.1f deg",
+                        detection.ftcPose.pitch,
+                        detection.ftcPose.roll,
+                        detection.ftcPose.yaw);
+            }
+
             telemetry.addData("=== DRIVE ===", "");
             telemetry.addData("FL/FR", "%.2f / %.2f", frontLeftPower, frontRightPower);
             telemetry.addData("BL/BR", "%.2f / %.2f", backLeftPower, backRightPower);
@@ -514,20 +540,32 @@ public class tacoDecode extends LinearOpMode {
     }
 
     private void initAprilTag() {
+        // Create custom tag library with current season tags
         AprilTagLibrary.Builder tagLibraryBuilder = new AprilTagLibrary.Builder();
         double tagSize = APRILTAG_SIZE;
-        tagLibraryBuilder.addTag(20, "Target Tag 20", tagSize, DistanceUnit.METER);
-        tagLibraryBuilder.addTag(24, "Target Tag 24", tagSize, DistanceUnit.METER);
+
+        // Add all common FTC season tags (adjust IDs as needed for your field setup)
+        tagLibraryBuilder.addTag(20, "Blue Goal Tag", tagSize, DistanceUnit.METER);
+        tagLibraryBuilder.addTag(21, "Center Obelisk Tag", tagSize, DistanceUnit.METER);
+        tagLibraryBuilder.addTag(24, "Red Goal Tag", tagSize, DistanceUnit.METER);
+
         AprilTagLibrary customTagLibrary = tagLibraryBuilder.build();
 
+        // Configure AprilTag processor with visual feedback options
         aprilTag = new AprilTagProcessor.Builder()
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 .setTagLibrary(customTagLibrary)
+                .setDrawTagID(true)              // Draw tag ID on camera stream
+                .setDrawTagOutline(true)         // Draw outline around detected tags
+                .setDrawAxes(true)               // Draw X, Y, Z axes
+                .setDrawCubeProjection(true)     // Draw 3D cube projection
                 .setOutputUnits(DistanceUnit.METER, AngleUnit.DEGREES)
                 .build();
 
+        // Build vision portal with recommended resolution (640x480)
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+                .setCameraResolution(new android.util.Size(640, 480))
                 .addProcessor(aprilTag)
                 .build();
     }
@@ -600,8 +638,8 @@ public class tacoDecode extends LinearOpMode {
         }
 
         AprilTagDetection detection = currentDetections.get(0);
-        int imageWidth = 1280;
-        int imageHeight = 720;
+        int imageWidth = 640;   // Updated to match 640x480 resolution
+        int imageHeight = 480;  // Updated to match 640x480 resolution
 
         // Calculate normalized error (-1.0 to 1.0)
         double xError = (detection.center.x - imageWidth / 2.0) / (imageWidth / 2.0);
@@ -653,4 +691,3 @@ public class tacoDecode extends LinearOpMode {
         }
         return value;
     }
-}
