@@ -33,28 +33,28 @@ public class tacoDecode extends LinearOpMode {
     // DISTANCE-TO-POWER MAPPING (Distance in meters, Power 0.0-1.0)
     private static final double[][] POWER_MAP = {
             // {Distance (m), Power}
-            {0.75,  0.52},
-            {1.0,   0.55},
-            {1.25,  0.55},
-            {1.50,  0.57},
-            {1.75,  0.60},
-            {2.0,   1.00},
-            {2.25,  1.00},
-            {2.50,  1.00},
-            {2.75,  1.00},
-            {3.0,   1.00},
-            {3.25,  1.00},
-            {3.50,  1.00},
-            {3.75,  1.00},
-            {4.0,   1.00},
-            {4.25,  1.00},
-            {4.50,  1.00},
-            {4.75,  1.00},
-            {5.0,   1.00},
-            {5.25,  1.00},
-            {5.50,  1.00},
-            {5.75,  1.00},
-            {6.0,   1.00}
+            {0.75, 0.52},
+            {1.0, 0.55},
+            {1.25, 0.55},
+            {1.50, 0.57},
+            {1.75, 0.60},
+            {2.0, 1.00},
+            {2.25, 1.00},
+            {2.50, 1.00},
+            {2.75, 1.00},
+            {3.0, 1.00},
+            {3.25, 1.00},
+            {3.50, 1.00},
+            {3.75, 1.00},
+            {4.0, 1.00},
+            {4.25, 1.00},
+            {4.50, 1.00},
+            {4.75, 1.00},
+            {5.0, 1.00},
+            {5.25, 1.00},
+            {5.50, 1.00},
+            {5.75, 1.00},
+            {6.0, 1.00}
     };
 
     // BATTERY COMPENSATION - Simple power boost when battery is low
@@ -71,22 +71,25 @@ public class tacoDecode extends LinearOpMode {
     private static final double POWER_ADJUST_LARGE = 0.05;  // Bumper adjustment
     private static final double POWER_ADJUST_SMALL = 0.01;  // D-pad Left/Right adjustment
 
-    // TURRET TRACKING TUNING - Optimized for smooth, responsive tracking
-    private static final double SMOOTHING_FACTOR = 0.4;      // Higher = faster response (0.0-1.0)
-    private static final double DEADBAND = 0.01;             // Ignore very small movements
-    private static final double SPIN_GAIN = 0.25;            // Horizontal tracking speed
-    private static final double TILT_GAIN = 0.015;           // Vertical tracking speed
-    private static final double MIN_SPEED = 0.03;            // Minimum servo speed
-    private static final double MAX_SPEED = 0.6;             // Maximum servo speed
-    private static final double ERROR_THRESHOLD = 0.03;      // Start tracking when 3% off center
+    // TURRET TRACKING - SIMPLE STEP MODE
+    private static final double PIXEL_DEADZONE = 50.0;       // 5cm in pixels (adjust based on distance)
+    private static final double SERVO_STEP = 0.01;           // Move servo by 0.01 each time
 
-    // Continuous servo adjustment - higher values = more aggressive tracking
-    private static final double SPIN_CONTINUOUS_MULTIPLIER = 1.5;  // Boost for continuous rotation
+    // TURRET HEADING CONTROL - Keep turret facing forward (60 degrees)
+    private static final double TARGET_HEADING = 60.0;       // Forward direction in degrees
+    private static final double HEADING_SMOOTHING = 0.85;    // Keep 85% OLD, 15% new
+    private static final double HEADING_GAIN = 0.002;        // How aggressively to correct heading
+    private static final double HEADING_DEADZONE = 2.0;      // Degrees - don't correct within this range
 
-    // SERVO LIMITS
+
+
+    // SERVO LIMITS - ADJUST THESE FOR YOUR PHYSICAL SERVO RANGE
     private static final double TILT_MIN = 0.0;
     private static final double TILT_MAX = 0.2;
     private static final double SPIN_CENTER = 0.5;
+    private static final double SPIN_MIN = 0.1;    // Left limit (wraps to SPIN_MAX)
+    private static final double SPIN_MAX = 1.0;    // Right limit (wraps to SPIN_MIN)
+    private static final boolean SPIN_WRAPAROUND_ENABLED = true;  // Enable continuous rotation wraparound
 
     // PIVOT SERVO SETTINGS
     private static final double PIVOT_MIN = 0.0;      // Minimum pivot angle (flat/down)
@@ -116,6 +119,11 @@ public class tacoDecode extends LinearOpMode {
     private static final double DEFAULT_SHOOTER_POWER = 0.6;
     private static final double HUMAN_PLAYER_SHOOTER_POWER = -1.0;  // Full reverse
     private static final double HUMAN_PLAYER_INTAKE_POWER = -0.5;   // Half speed reverse
+    private static final double SMOOTHING_FACTOR = 0.85;
+    private static final double SPIN_GAIN = 0.01;
+    private static final double TILT_GAIN = 0.01;
+    private static final double MIN_SERVO_MOVEMENT = 0.01;
+
 
     // ========================================
     // END OF TUNING AREA
@@ -161,7 +169,7 @@ public class tacoDecode extends LinearOpMode {
     private double targetDistance = 0.0;
     private double rawDistance = 0.0;
     private double spinPosition = SPIN_CENTER;
-    private double tiltPosition = 0.1;
+    private double tiltPosition = 0.2;
     private double currentVoltage = 12.5;
 
     // Smoothing for Turret Tracking
@@ -218,13 +226,14 @@ public class tacoDecode extends LinearOpMode {
         // Initialize vision
         initAprilTag();
 
-        telemetry.addData("Status", "Initialized - AprilTag Vision Ready");
+        telemetry.addData("Status", "Initialized - AprilTag Simple Tracking");
+        telemetry.addData("Tracking Mode", "Simple Step (0.01 per move)");
         telemetry.addData("Controls", "L-Stick: Drive | R-Stick: Turn");
         telemetry.addData("X", "Manual Shooter | Y: Auto-Aim");
         telemetry.addData("Bumpers", "Speed ±0.05 | DPad L/R: ±0.01");
         telemetry.addData("DPad Up", "Rapid Shoot | DPad Down: Human Player");
         telemetry.addData("A/B", "Intake Control");
-        telemetry.addData("Camera", "640x480 with visual overlays enabled");
+        telemetry.addData("Turret", "Steps 0.01 toward AprilTag");
         telemetry.update();
 
         waitForStart();
@@ -364,6 +373,13 @@ public class tacoDecode extends LinearOpMode {
             }
             lastDpadDownPress = gamepad1.dpad_down;
 
+            // ========================================
+            // SIMPLE APRILTAG TRACKING
+            // ========================================
+            if (!humanPlayerMode) {
+                simpleTrackAprilTag();
+            }
+
             // --- Shooter Logic ---
             if (humanPlayerMode) {
                 // Human player mode - shooter and intake already set when mode activated
@@ -379,9 +395,6 @@ public class tacoDecode extends LinearOpMode {
                         shooterRightPower = calculatedPower;
                         shooterRight.setPower(shooterRightPower);
                         shooterLeft.setPower(shooterLeftPower);
-                        if (limelightTrackingEnabled) {
-                            trackAprilTagWithTurret();
-                        }
                     } else {
                         shooterRight.setPower(0);
                         shooterLeft.setPower(0);
@@ -410,15 +423,9 @@ public class tacoDecode extends LinearOpMode {
                     shooterRightPower = calculatedPower;
                     shooterRight.setPower(shooterRightPower);
                     shooterLeft.setPower(shooterLeftPower);
-                    if (limelightTrackingEnabled) {
-                        trackAprilTagWithTurret();
-                    }
                 } else {
                     shooterRight.setPower(0);
                     shooterLeft.setPower(0);
-                    if (limelightTrackingEnabled) {
-                        Limelightspin.setPosition(SPIN_CENTER);
-                    }
                 }
             } else if (shooterMode == 1) {
                 // Manual shooter mode
@@ -489,6 +496,7 @@ public class tacoDecode extends LinearOpMode {
             if (detectedTagCount > 0 && currentDetections != null) {
                 AprilTagDetection detection = currentDetections.get(0);
                 telemetry.addData("Active Tag ID", detection.id);
+                telemetry.addData("Tag Center", "X:%.1f Y:%.1f", detection.center.x, detection.center.y);
                 telemetry.addData("Tag Position", "X:%.1f Y:%.1f Z:%.1f cm",
                         detection.ftcPose.x * 100,
                         detection.ftcPose.y * 100,
@@ -499,6 +507,13 @@ public class tacoDecode extends LinearOpMode {
                         detection.ftcPose.yaw);
             }
 
+            telemetry.addData("=== APRILTAG TRACKING ===", "");
+            telemetry.addData("Tags Detected", detectedTagCount);
+            if (detectedTagCount > 0 && currentDetections != null) {
+                AprilTagDetection detection = currentDetections.get(0);
+                telemetry.addData("Active Tag ID", detection.id);
+                telemetry.addData("Tag Center", "X:%.1f Y:%.1f", detection.center.x, detection.center.y);
+            }
             telemetry.addData("=== DRIVE ===", "");
             telemetry.addData("FL/FR", "%.2f / %.2f", frontLeftPower, frontRightPower);
             telemetry.addData("BL/BR", "%.2f / %.2f", backLeftPower, backRightPower);
@@ -513,11 +528,10 @@ public class tacoDecode extends LinearOpMode {
             telemetry.addData("Power", "%.2f", intakeWheelsPower);
             telemetry.addData("Running", intakeRunning);
             telemetry.addData("Balls", ballCount);
-            telemetry.addData("=== TURRET ===", "");
+            telemetry.addData("=== TURRET (SIMPLE TRACKING) ===", "");
             telemetry.addData("Spin", "%.3f", spinPosition);
             telemetry.addData("Tilt", "%.3f", tiltPosition);
-            telemetry.addData("X Err", "%.3f", smoothedXError);
-            telemetry.addData("Y Err", "%.3f", smoothedYError);
+            telemetry.addData("Auto-Aim", autoAimEnabled ? "ON" : "OFF");
             telemetry.update();
         }
 
@@ -532,10 +546,14 @@ public class tacoDecode extends LinearOpMode {
         }
 
         switch (shooterMode) {
-            case 0: return "Off";
-            case 1: return "Manual";
-            case 2: return "Auto-Aim";
-            default: return "Unknown";
+            case 0:
+                return "Off";
+            case 1:
+                return "Manual";
+            case 2:
+                return "Auto-Aim";
+            default:
+                return "Unknown";
         }
     }
 
@@ -628,60 +646,200 @@ public class tacoDecode extends LinearOpMode {
         return Math.max(0.30, Math.min(1.0, calculatedPower));
     }
 
-    private void trackAprilTagWithTurret() {
+    private void simpleTrackAprilTag() {
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
         if (currentDetections == null || currentDetections.isEmpty()) {
-            Limelightspin.setPosition(SPIN_CENTER);
-            smoothedXError = 0.0;
-            smoothedYError = 0.0;
+            // No target detected - hold current position
+            telemetry.addData("=== TRACKING ===", "");
+            telemetry.addData("Status", "❌ No AprilTag detected");
+            telemetry.addData("Spin", "%.3f (holding)", spinPosition);
+            telemetry.addData("Tilt", "%.3f (holding)", tiltPosition);
             return;
         }
 
         AprilTagDetection detection = currentDetections.get(0);
-        int imageWidth = 640;   // Updated to match 640x480 resolution
-        int imageHeight = 480;  // Updated to match 640x480 resolution
 
-        // Calculate normalized error (-1.0 to 1.0)
-        double xError = (detection.center.x - imageWidth / 2.0) / (imageWidth / 2.0);
-        double yError = (detection.center.y - imageHeight / 2.0) / (imageHeight / 2.0);
+        int imageWidth = 640;
+        int imageHeight = 480;
 
-        // Apply exponential smoothing for responsive but stable tracking
-        smoothedXError = SMOOTHING_FACTOR * xError + (1 - SMOOTHING_FACTOR) * smoothedXError;
-        smoothedYError = SMOOTHING_FACTOR * yError + (1 - SMOOTHING_FACTOR) * smoothedYError;
+        // Calculate pixel error from center
+        double centerX = imageWidth / 2.0;
+        double centerY = imageHeight / 2.0;
+        double pixelErrorX = detection.center.x - centerX;
+        double pixelErrorY = detection.center.y - centerY;
 
-        // Apply deadband to prevent jitter
-        double finalXError = Math.abs(smoothedXError) < DEADBAND ? 0 : smoothedXError;
-        double finalYError = Math.abs(smoothedYError) < DEADBAND ? 0 : smoothedYError;
+        telemetry.addData("=== TRACKING ===", "");
+        telemetry.addData("Tag Center", "X:%.0f Y:%.0f", detection.center.x, detection.center.y);
+        telemetry.addData("Screen Center", "X:%.0f Y:%.0f", centerX, centerY);
+        telemetry.addData("Pixel Error", "X:%.0f Y:%.0f", pixelErrorX, pixelErrorY);
 
-        // HORIZONTAL TRACKING (Spin servo - continuous rotation)
-        if (Math.abs(finalXError) > ERROR_THRESHOLD) {
-            // Proportional control with enhanced gain for continuous servos
-            double spinSpeed = -finalXError * SPIN_GAIN * SPIN_CONTINUOUS_MULTIPLIER;
+        // HORIZONTAL TRACKING (Spin servo)
+        if (Math.abs(pixelErrorX) > PIXEL_DEADZONE) {
+            // Tag is more than 50 pixels from center horizontally
+            double oldSpin = spinPosition;
 
-            // Apply minimum speed threshold to overcome friction
-            if (Math.abs(spinSpeed) > 0 && Math.abs(spinSpeed) < MIN_SPEED) {
-                spinSpeed = Math.signum(spinSpeed) * MIN_SPEED;
+            if (pixelErrorX > 0) {
+                // Tag is to the right, move servo right
+                spinPosition += SERVO_STEP;
+            } else {
+                // Tag is to the left, move servo left
+                spinPosition -= SERVO_STEP;
             }
 
-            // Clamp to maximum speed
-            spinSpeed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, spinSpeed));
+            // Handle wraparound for continuous rotation servo
+            if (SPIN_WRAPAROUND_ENABLED) {
+                if (spinPosition < SPIN_MIN) {
+                    spinPosition = SPIN_MAX - (SPIN_MIN - spinPosition);
+                    telemetry.addData("Spin", "%.3f → %.3f (wrapped left)", oldSpin, spinPosition);
+                } else if (spinPosition > SPIN_MAX) {
+                    spinPosition = SPIN_MIN + (spinPosition - SPIN_MAX);
+                    telemetry.addData("Spin", "%.3f → %.3f (wrapped right)", oldSpin, spinPosition);
+                } else {
+                    telemetry.addData("Spin", "%.3f → %.3f", oldSpin, spinPosition);
+                }
+            } else {
+                spinPosition = Math.max(SPIN_MIN, Math.min(SPIN_MAX, spinPosition));
+                telemetry.addData("Spin", "%.3f → %.3f", oldSpin, spinPosition);
+            }
 
-            // For continuous rotation servo: 0.5 = stop, <0.5 = CCW, >0.5 = CW
-            spinPosition = SPIN_CENTER + spinSpeed;
             Limelightspin.setPosition(spinPosition);
+            telemetry.addData("Status", "🎯 Tracking X (%.0fpx off)", pixelErrorX);
         } else {
-            // Target is centered - stop rotation
-            spinPosition = SPIN_CENTER;
-            Limelightspin.setPosition(spinPosition);
-            smoothedXError = 0.0;
+            telemetry.addData("Spin", "%.3f (centered X)", spinPosition);
         }
 
-        // VERTICAL TRACKING (Tilt servo - positional)
-        // Always adjust tilt when target is visible, more aggressive than horizontal
-        double tiltAdjustment = -finalYError * TILT_GAIN;
-        tiltPosition += tiltAdjustment;
-        tiltPosition = Math.max(TILT_MIN, Math.min(TILT_MAX, tiltPosition));
-        Limelighttilt.setPosition(tiltPosition);
+        // VERTICAL TRACKING (Tilt servo)
+        if (Math.abs(pixelErrorY) > PIXEL_DEADZONE) {
+            // Tag is more than 50 pixels from center vertically
+            double oldTilt = tiltPosition;
+
+            if (pixelErrorY > 0) {
+                // Tag is below center, tilt down
+                tiltPosition += SERVO_STEP;
+            } else {
+                // Tag is above center, tilt up
+                tiltPosition -= SERVO_STEP;
+            }
+
+            tiltPosition = Math.max(TILT_MIN, Math.min(TILT_MAX, tiltPosition));
+
+            telemetry.addData("Tilt", "%.3f → %.3f", oldTilt, tiltPosition);
+            Limelighttilt.setPosition(tiltPosition);
+            telemetry.addData("Status", "🎯 Tracking Y (%.0fpx off)", pixelErrorY);
+        } else {
+            telemetry.addData("Tilt", "%.3f (centered Y)", tiltPosition);
+        }
+
+        // Check if fully centered
+        if (Math.abs(pixelErrorX) <= PIXEL_DEADZONE && Math.abs(pixelErrorY) <= PIXEL_DEADZONE) {
+            telemetry.addData("Status", "🔒 LOCKED ON TARGET");
+        }
+    }
+
+    private void trackAprilTagWithTurret() {
+        List<AprilTagDetection> currentDetections = aprilTag.getDetections();
+        if (currentDetections == null || currentDetections.isEmpty()) {
+            // No target detected - hold current position
+            smoothedXError = 0.0;
+            smoothedYError = 0.0;
+            telemetry.addData("TRACKING", "❌ No target - holding position");
+            telemetry.addData("Spin", "%.3f (holding)", spinPosition);
+            telemetry.addData("Tilt", "%.3f (holding)", tiltPosition);
+            return;
+        }
+
+        AprilTagDetection detection = currentDetections.get(0);
+
+        int imageWidth = 640;
+        int imageHeight = 480;
+
+        // Calculate raw pixel error from center
+        double centerX = imageWidth / 2.0;
+        double centerY = imageHeight / 2.0;
+        double pixelErrorX = detection.center.x - centerX;
+        double pixelErrorY = detection.center.y - centerY;
+
+        // Calculate total pixel distance from center
+        double pixelDistance = Math.sqrt(pixelErrorX * pixelErrorX + pixelErrorY * pixelErrorY);
+
+        telemetry.addData("=== TRACKING STATUS ===", "");
+        telemetry.addData("Tag Center", "%.0f, %.0f", detection.center.x, detection.center.y);
+        telemetry.addData("Pixel Offset", "X:%.0f Y:%.0f", pixelErrorX, pixelErrorY);
+        telemetry.addData("Distance from Center", "%.0f px", pixelDistance);
+
+        // ONLY TRACK IF MORE THAN DEADZONE PIXELS FROM CENTER
+        if (pixelDistance <= PIXEL_DEADZONE) {
+            // Target is close enough - HOLD POSITION and reset smoothing
+            telemetry.addData("Status", "🔒 LOCKED (within %.0fpx)", PIXEL_DEADZONE);
+            smoothedXError = 0.0;
+            smoothedYError = 0.0;
+            // DON'T update servo positions - keep them where they are
+            telemetry.addData("Spin", "%.3f (locked)", spinPosition);
+            telemetry.addData("Tilt", "%.3f (locked)", tiltPosition);
+            return;
+        }
+
+        // Target is far enough - start tracking
+        telemetry.addData("Status", "🎯 TRACKING (%.0fpx away)", pixelDistance);
+
+        // Calculate normalized error (-1.0 to 1.0)
+        double xError = pixelErrorX / centerX;
+        double yError = pixelErrorY / centerY;
+
+        // Apply exponential smoothing - REVERSED FACTOR (0.15 means keep 15% new, 85% old)
+        // This makes movement smoother and less reactive
+        smoothedXError = (1 - SMOOTHING_FACTOR) * xError + SMOOTHING_FACTOR * smoothedXError;
+        smoothedYError = (1 - SMOOTHING_FACTOR) * yError + SMOOTHING_FACTOR * smoothedYError;
+
+        telemetry.addData("Raw Error", "X:%.3f Y:%.3f", xError, yError);
+        telemetry.addData("Smoothed Error", "X:%.3f Y:%.3f", smoothedXError, smoothedYError);
+
+        // Calculate adjustments
+        double spinAdjustment = -smoothedXError * SPIN_GAIN;
+        double tiltAdjustment = -smoothedYError * TILT_GAIN;
+
+        // HORIZONTAL TRACKING (Spin servo) with wraparound
+        // Only move if adjustment is significant enough
+        if (Math.abs(spinAdjustment) >= MIN_SERVO_MOVEMENT) {
+            double oldSpin = spinPosition;
+            spinPosition += spinAdjustment;
+
+            // Handle wraparound for continuous rotation servo
+            if (SPIN_WRAPAROUND_ENABLED) {
+                if (spinPosition < SPIN_MIN) {
+                    // Wrap from 0.1 to 1.0
+                    spinPosition = SPIN_MAX - (SPIN_MIN - spinPosition);
+                    telemetry.addData("Spin", "%.3f → %.3f (wrapped left)", oldSpin, spinPosition);
+                } else if (spinPosition > SPIN_MAX) {
+                    // Wrap from 1.0 to 0.1
+                    spinPosition = SPIN_MIN + (spinPosition - SPIN_MAX);
+                    telemetry.addData("Spin", "%.3f → %.3f (wrapped right)", oldSpin, spinPosition);
+                } else {
+                    telemetry.addData("Spin", "%.3f → %.3f (Δ%.3f)", oldSpin, spinPosition, spinAdjustment);
+                }
+            } else {
+                // Standard clamping (no wraparound)
+                spinPosition = Math.max(SPIN_MIN, Math.min(SPIN_MAX, spinPosition));
+                telemetry.addData("Spin", "%.3f → %.3f (Δ%.3f)", oldSpin, spinPosition, spinAdjustment);
+            }
+
+            Limelightspin.setPosition(spinPosition);
+        } else {
+            telemetry.addData("Spin", "%.3f (settled)", spinPosition);
+        }
+
+        // VERTICAL TRACKING (Tilt servo)
+        // Only move if adjustment is significant enough
+        if (Math.abs(tiltAdjustment) >= MIN_SERVO_MOVEMENT) {
+            double oldTilt = tiltPosition;
+            tiltPosition += tiltAdjustment;
+            tiltPosition = Math.max(TILT_MIN, Math.min(TILT_MAX, tiltPosition));
+
+            telemetry.addData("Tilt", "%.3f → %.3f (Δ%.3f)", oldTilt, tiltPosition, tiltAdjustment);
+            Limelighttilt.setPosition(tiltPosition);
+        } else {
+            telemetry.addData("Tilt", "%.3f (settled)", tiltPosition);
+        }
     }
 
     // Helper method to apply deadzone to joystick inputs
@@ -691,3 +849,4 @@ public class tacoDecode extends LinearOpMode {
         }
         return value;
     }
+}

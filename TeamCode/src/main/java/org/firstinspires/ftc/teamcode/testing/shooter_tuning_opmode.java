@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp(name = "Shooter Speed Tuning", group = "Tuning")
-public class ShooterSpeedTuning extends OpMode {
+public class shooter_tuning_opmode extends OpMode {
 
     // ========================================
     // TUNING CONFIGURATION
