@@ -71,30 +71,28 @@ public class tacoDecode extends LinearOpMode {
     private static final double POWER_ADJUST_LARGE = 0.05;  // Bumper adjustment
     private static final double POWER_ADJUST_SMALL = 0.01;  // D-pad Left/Right adjustment
 
-    // TURRET TRACKING - SIMPLE STEP MODE
-    private static final double PIXEL_DEADZONE = 50.0;       // 5cm in pixels (adjust based on distance)
-    private static final double SERVO_STEP = 0.01;           // Move servo by 0.01 each time
+    // TURRET TRACKING - SIMPLE STEP MODE (COMMENTED OUT - NOT USED)
+    // private static final double PIXEL_DEADZONE = 50.0;       // 5cm in pixels (adjust based on distance)
+    // private static final double SERVO_STEP = 0.01;           // Move servo by 0.01 each time
 
-    // TURRET HEADING CONTROL - Keep turret facing forward (60 degrees)
-    private static final double TARGET_HEADING = 60.0;       // Forward direction in degrees
-    private static final double HEADING_SMOOTHING = 0.85;    // Keep 85% OLD, 15% new
-    private static final double HEADING_GAIN = 0.002;        // How aggressively to correct heading
-    private static final double HEADING_DEADZONE = 2.0;      // Degrees - don't correct within this range
+    // TURRET HEADING CONTROL - Keep turret facing forward (60 degrees) (COMMENTED OUT - NOT USED)
+    // private static final double TARGET_HEADING = 60.0;       // Forward direction in degrees
+    // private static final double HEADING_SMOOTHING = 0.85;    // Keep 85% OLD, 15% new
+    // private static final double HEADING_GAIN = 0.002;        // How aggressively to correct heading
+    // private static final double HEADING_DEADZONE = 2.0;      // Degrees - don't correct within this range
 
+    // SERVO LIMITS - ADJUST THESE FOR YOUR PHYSICAL SERVO RANGE (COMMENTED OUT - NOT USED)
+    // private static final double TILT_MIN = 0.0;
+    // private static final double TILT_MAX = 0.2;
+    // private static final double SPIN_CENTER = 0.5;
+    // private static final double SPIN_MIN = 0.1;    // Left limit (wraps to SPIN_MAX)
+    // private static final double SPIN_MAX = 1.0;    // Right limit (wraps to SPIN_MIN)
+    // private static final boolean SPIN_WRAPAROUND_ENABLED = true;  // Enable continuous rotation wraparound
 
-
-    // SERVO LIMITS - ADJUST THESE FOR YOUR PHYSICAL SERVO RANGE
-    private static final double TILT_MIN = 0.0;
-    private static final double TILT_MAX = 0.2;
-    private static final double SPIN_CENTER = 0.5;
-    private static final double SPIN_MIN = 0.1;    // Left limit (wraps to SPIN_MAX)
-    private static final double SPIN_MAX = 1.0;    // Right limit (wraps to SPIN_MIN)
-    private static final boolean SPIN_WRAPAROUND_ENABLED = true;  // Enable continuous rotation wraparound
-
-    // PIVOT SERVO SETTINGS
-    private static final double PIVOT_MIN = 0.0;      // Minimum pivot angle (flat/down)
-    private static final double PIVOT_MAX = 1.0;      // Maximum pivot angle (up)
-    private static final double PIVOT_DEFAULT = 0.3;  // Default position when not auto-aiming
+    // PIVOT SERVO SETTINGS (COMMENTED OUT - NOT USED)
+    // private static final double PIVOT_MIN = 0.0;      // Minimum pivot angle (flat/down)
+    // private static final double PIVOT_MAX = 1.0;      // Maximum pivot angle (up)
+    // private static final double PIVOT_DEFAULT = 0.3;  // Default position when not auto-aiming
 
     // PHYSICAL MEASUREMENTS (in meters)
     private static final double APRILTAG_HEIGHT = 0.33;          // Height of AprilTag center from ground
@@ -119,10 +117,10 @@ public class tacoDecode extends LinearOpMode {
     private static final double DEFAULT_SHOOTER_POWER = 0.6;
     private static final double HUMAN_PLAYER_SHOOTER_POWER = -1.0;  // Full reverse
     private static final double HUMAN_PLAYER_INTAKE_POWER = -0.5;   // Half speed reverse
-    private static final double SMOOTHING_FACTOR = 0.85;
-    private static final double SPIN_GAIN = 0.01;
-    private static final double TILT_GAIN = 0.01;
-    private static final double MIN_SERVO_MOVEMENT = 0.01;
+    // private static final double SMOOTHING_FACTOR = 0.85;  // COMMENTED OUT - NOT USED
+    // private static final double SPIN_GAIN = 0.01;  // COMMENTED OUT - NOT USED
+    // private static final double TILT_GAIN = 0.01;  // COMMENTED OUT - NOT USED
+    // private static final double MIN_SERVO_MOVEMENT = 0.01;  // COMMENTED OUT - NOT USED
 
 
     // ========================================
@@ -136,7 +134,7 @@ public class tacoDecode extends LinearOpMode {
     // Hardware
     private DcMotorEx shooterLeft, shooterRight, intakeWheels;
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
-    private Servo Limelightspin, Limelighttilt;
+    // private Servo Limelightspin, Limelighttilt;  // COMMENTED OUT - NOT USED
     private ColorSensor colorSensor;
 
     // State Variables
@@ -154,7 +152,7 @@ public class tacoDecode extends LinearOpMode {
     private boolean intakeRunning = false;
     private boolean humanPlayerMode = false;
     private boolean autoAimEnabled = false;
-    private boolean limelightTrackingEnabled = false;
+    // private boolean limelightTrackingEnabled = false;  // COMMENTED OUT - NOT USED
     private boolean rapidShootMode = false;
     private boolean ballDetected = false;
 
@@ -168,13 +166,13 @@ public class tacoDecode extends LinearOpMode {
     private double intakeWheelsPower = 0.0;
     private double targetDistance = 0.0;
     private double rawDistance = 0.0;
-    private double spinPosition = SPIN_CENTER;
-    private double tiltPosition = 0.2;
+    // private double spinPosition = SPIN_CENTER;  // COMMENTED OUT - NOT USED
+    // private double tiltPosition = 0.2;  // COMMENTED OUT - NOT USED
     private double currentVoltage = 12.5;
 
-    // Smoothing for Turret Tracking
-    private double smoothedXError = 0.0;
-    private double smoothedYError = 0.0;
+    // Smoothing for Turret Tracking (COMMENTED OUT - NOT USED)
+    // private double smoothedXError = 0.0;
+    // private double smoothedYError = 0.0;
 
     @Override
     public void runOpMode() {
@@ -189,8 +187,10 @@ public class tacoDecode extends LinearOpMode {
         backLeft = hardwareMap.get(DcMotorEx.class, "backLeft");
         backRight = hardwareMap.get(DcMotorEx.class, "backRight");
 
-        Limelightspin = hardwareMap.get(Servo.class, "Limelightspin");
-        Limelighttilt = hardwareMap.get(Servo.class, "Limelighttilt");
+        // TURRET SERVOS COMMENTED OUT - NOT USED
+        // Limelightspin = hardwareMap.get(Servo.class, "Limelightspin");
+        // Limelighttilt = hardwareMap.get(Servo.class, "Limelighttilt");
+
         colorSensor = hardwareMap.get(ColorSensor.class, "colorSensor");
 
         // REVERSED SHOOTER DIRECTIONS
@@ -220,20 +220,19 @@ public class tacoDecode extends LinearOpMode {
         backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        Limelightspin.setPosition(SPIN_CENTER);
-        Limelighttilt.setPosition(tiltPosition);
+        // TURRET SERVO INITIALIZATION COMMENTED OUT - NOT USED
+        // Limelightspin.setPosition(SPIN_CENTER);
+        // Limelighttilt.setPosition(tiltPosition);
 
         // Initialize vision
         initAprilTag();
 
-        telemetry.addData("Status", "Initialized - AprilTag Simple Tracking");
-        telemetry.addData("Tracking Mode", "Simple Step (0.01 per move)");
+        telemetry.addData("Status", "Initialized - Turret Disabled");
         telemetry.addData("Controls", "L-Stick: Drive | R-Stick: Turn");
         telemetry.addData("X", "Manual Shooter | Y: Auto-Aim");
         telemetry.addData("Bumpers", "Speed ±0.05 | DPad L/R: ±0.01");
         telemetry.addData("DPad Up", "Rapid Shoot | DPad Down: Human Player");
         telemetry.addData("A/B", "Intake Control");
-        telemetry.addData("Turret", "Steps 0.01 toward AprilTag");
         telemetry.update();
 
         waitForStart();
@@ -244,9 +243,9 @@ public class tacoDecode extends LinearOpMode {
             currentVoltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
 
             // ========================================
-            // DRIVE CONTROLS (Robot-Centric Mecanum)
+            // DRIVE CONTROLS (Robot-Centric Mecanum) - FIXED DIRECTION
             // ========================================
-            double drive = -applyDeadzone(gamepad1.left_stick_y);    // Forward/backward
+            double drive = applyDeadzone(gamepad1.left_stick_y);    // REMOVED NEGATION - Forward/backward now correct
             double strafe = applyDeadzone(gamepad1.left_stick_x);    // Left/right
             double turn = applyDeadzone(gamepad1.right_stick_x);     // Rotation
 
@@ -318,7 +317,7 @@ public class tacoDecode extends LinearOpMode {
             if (gamepad1.x && !lastXPress && !humanPlayerMode && !rapidShootMode) {
                 shooterMode = (shooterMode == 1) ? 0 : 1;
                 autoAimEnabled = false;
-                limelightTrackingEnabled = false;
+                // limelightTrackingEnabled = false;  // COMMENTED OUT - NOT USED
             }
             lastXPress = gamepad1.x;
 
@@ -326,12 +325,12 @@ public class tacoDecode extends LinearOpMode {
             if (gamepad1.y && !lastYPress && !humanPlayerMode && !rapidShootMode) {
                 if (autoAimEnabled) {
                     autoAimEnabled = false;
-                    limelightTrackingEnabled = false;
+                    // limelightTrackingEnabled = false;  // COMMENTED OUT - NOT USED
                     shooterMode = 0;
-                    Limelightspin.setPosition(SPIN_CENTER);
+                    // Limelightspin.setPosition(SPIN_CENTER);  // COMMENTED OUT - NOT USED
                 } else {
                     autoAimEnabled = true;
-                    limelightTrackingEnabled = true;
+                    // limelightTrackingEnabled = true;  // COMMENTED OUT - NOT USED
                     shooterMode = 2;
                 }
             }
@@ -360,9 +359,9 @@ public class tacoDecode extends LinearOpMode {
                     shooterLeft.setPower(shooterLeftPower);
                     intakeWheels.setPower(HUMAN_PLAYER_INTAKE_POWER);
                     autoAimEnabled = false;
-                    limelightTrackingEnabled = false;
+                    // limelightTrackingEnabled = false;  // COMMENTED OUT - NOT USED
                     rapidShootMode = false;
-                    Limelightspin.setPosition(SPIN_CENTER);
+                    // Limelightspin.setPosition(SPIN_CENTER);  // COMMENTED OUT - NOT USED
                 } else {
                     shooterRightPower = DEFAULT_SHOOTER_POWER;
                     shooterLeftPower = DEFAULT_SHOOTER_POWER;
@@ -374,11 +373,11 @@ public class tacoDecode extends LinearOpMode {
             lastDpadDownPress = gamepad1.dpad_down;
 
             // ========================================
-            // SIMPLE APRILTAG TRACKING
+            // TURRET TRACKING DISABLED
             // ========================================
-            if (!humanPlayerMode) {
-                simpleTrackAprilTag();
-            }
+            // if (!humanPlayerMode) {
+            //     simpleTrackAprilTag();
+            // }
 
             // --- Shooter Logic ---
             if (humanPlayerMode) {
@@ -507,13 +506,6 @@ public class tacoDecode extends LinearOpMode {
                         detection.ftcPose.yaw);
             }
 
-            telemetry.addData("=== APRILTAG TRACKING ===", "");
-            telemetry.addData("Tags Detected", detectedTagCount);
-            if (detectedTagCount > 0 && currentDetections != null) {
-                AprilTagDetection detection = currentDetections.get(0);
-                telemetry.addData("Active Tag ID", detection.id);
-                telemetry.addData("Tag Center", "X:%.1f Y:%.1f", detection.center.x, detection.center.y);
-            }
             telemetry.addData("=== DRIVE ===", "");
             telemetry.addData("FL/FR", "%.2f / %.2f", frontLeftPower, frontRightPower);
             telemetry.addData("BL/BR", "%.2f / %.2f", backLeftPower, backRightPower);
@@ -528,9 +520,8 @@ public class tacoDecode extends LinearOpMode {
             telemetry.addData("Power", "%.2f", intakeWheelsPower);
             telemetry.addData("Running", intakeRunning);
             telemetry.addData("Balls", ballCount);
-            telemetry.addData("=== TURRET (SIMPLE TRACKING) ===", "");
-            telemetry.addData("Spin", "%.3f", spinPosition);
-            telemetry.addData("Tilt", "%.3f", tiltPosition);
+            telemetry.addData("=== TURRET ===", "");
+            telemetry.addData("Status", "DISABLED");
             telemetry.addData("Auto-Aim", autoAimEnabled ? "ON" : "OFF");
             telemetry.update();
         }
@@ -646,6 +637,8 @@ public class tacoDecode extends LinearOpMode {
         return Math.max(0.30, Math.min(1.0, calculatedPower));
     }
 
+    // TURRET TRACKING METHODS COMMENTED OUT - NOT USED
+    /*
     private void simpleTrackAprilTag() {
         List<AprilTagDetection> currentDetections = aprilTag.getDetections();
         if (currentDetections == null || currentDetections.isEmpty()) {
@@ -841,6 +834,7 @@ public class tacoDecode extends LinearOpMode {
             telemetry.addData("Tilt", "%.3f (settled)", tiltPosition);
         }
     }
+    */
 
     // Helper method to apply deadzone to joystick inputs
     private double applyDeadzone(double value) {
