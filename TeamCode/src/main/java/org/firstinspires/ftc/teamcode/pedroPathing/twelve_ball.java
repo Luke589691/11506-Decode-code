@@ -91,7 +91,7 @@ public class twelve_ball extends OpMode {
      */
     public void intakeArtifacts() {
         intakeWheels.setPower(-1);  // Full power intake
-        sleep(3000);                // Spin for 3 seconds
+        sleep(5000);                // Spin for 3 seconds
         intakeWheels.setPower(0);   // Stop intake
     }
 
@@ -104,7 +104,7 @@ public class twelve_ball extends OpMode {
         // Spin up shooter flywheels
         shooterLeft.setPower(0.57);
         shooterRight.setPower(0.57);
-        sleep(3000);  // Give flywheels time to reach speed
+        sleep(5000);  // Give flywheels time to reach speed
 
         // Pulse intake 4 times to feed artifacts into shooter
         for (int i = 0; i < 4; i++) {

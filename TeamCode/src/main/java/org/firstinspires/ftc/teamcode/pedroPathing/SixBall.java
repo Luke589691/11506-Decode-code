@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Pedro Pathing Autonomous Test", group = "Autonomous")
+@Autonomous(name = "Six ball blue", group = "Autonomous")
 @Configurable // Panels
 public class SixBall extends OpMode {
     private TelemetryManager panelsTelemetry; // Panels Telemetry instance
@@ -90,7 +90,7 @@ public class SixBall extends OpMode {
      */
     public void intakeArtifacts() {
         intakeWheels.setPower(-1);  // Full power intake
-        sleep(3000);                // Spin for 3 seconds
+        sleep(5000);                // Spin for 3 seconds
         intakeWheels.setPower(0);   // Stop intake
     }
 
@@ -101,19 +101,19 @@ public class SixBall extends OpMode {
      */
     public void shootArtifacts() {
         // Spin up shooter flywheels
-        shooterLeft.setPower(0.57);
-        shooterRight.setPower(0.57);
-        sleep(3000);  // Give flywheels time to reach speed
+        shooterLeft.setPower(-0.60);
+        shooterRight.setPower(-0.60);
+        sleep(4000);  // Give flywheels time to reach speed
 
         // Pulse intake 6 times to feed artifacts into shooter
         for (int i = 0; i < 4; i++) {
             // Spin intake to feed artifact
             intakeWheels.setPower(-1.0);
-            sleep(400);  // Feed for 0.2 seconds
+            sleep(700);  // Feed for 0.2 seconds
 
             // Stop intake briefly
-            intakeWheels.setPower(0);
-            sleep(1500);  // Wait 1.5 seconds between shots
+           intakeWheels.setPower(0);
+           sleep(1500);  // Wait 1.5 seconds between shots
         }
 
         // Stop shooters after done
