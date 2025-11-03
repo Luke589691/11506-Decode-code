@@ -37,6 +37,7 @@ public class nine_ball_v2_red extends OpMode {
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
 
+
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();

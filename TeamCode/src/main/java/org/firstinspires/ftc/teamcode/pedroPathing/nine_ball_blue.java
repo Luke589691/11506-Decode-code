@@ -10,6 +10,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -61,6 +62,10 @@ public class nine_ball_blue extends OpMode {
         public PathChain Path9;
         public PathChain Path10;
         public PathChain Path11;
+
+        public DcMotorEx intakeWheels = null;
+        public DcMotorEx shooterLeft = null;
+        public DcMotorEx shooterRight = null;
 
         public Paths(Follower follower) {
             Path1 = follower
