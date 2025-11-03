@@ -14,9 +14,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Twelve Ball Autonomous", group = "Autonomous")
+@Autonomous(name = "Twelve Ball Blue", group = "Autonomous")
 @Configurable // Panels
-public class twelve_ball extends OpMode {
+public class twelve_ball_blue extends OpMode {
     private TelemetryManager panelsTelemetry; // Panels Telemetry instance
     public Follower follower; // Pedro Pathing follower instance
     private int pathState = 0; // Current autonomous path state (state machine)
