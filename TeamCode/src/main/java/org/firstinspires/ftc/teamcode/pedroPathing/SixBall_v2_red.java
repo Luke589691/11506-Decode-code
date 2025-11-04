@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "Six Ball Red V2", group = "Autonomous")
@@ -137,8 +138,8 @@ public class SixBall_v2_red extends OpMode {
      * Start the shooting sequence (non-blocking)
      */
     private void startShooting() {
-        shooterLeft.setPower(-0.62);
-        shooterRight.setPower(-0.62);
+        shooterLeft.setPower(-0.55);
+        shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
         shooterTimer.reset();
@@ -185,7 +186,7 @@ public class SixBall_v2_red extends OpMode {
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(113.523, 84.112),   // 144 - 30.477
+                            new Pose(120.523, 84.112),   // 144 - 30.477
                             new Pose(87.925, 93.533)     // 144 - 56.075
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-135
@@ -238,8 +239,8 @@ public class SixBall_v2_red extends OpMode {
             case 5:
                 // Start Path3 with full intake
                 telemetry.addData("State", "Starting Path3 - Intake FULL");
-                intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                intakeWheels.setPower(-1);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
