@@ -91,7 +91,7 @@ public class SixBall_v2_red extends OpMode {
     private boolean updateShooter() {
         if (shooterSpinningUp) {
             // Wait for flywheels to spin up
-            if (shooterTimer.milliseconds() >= 4000) {
+            if (shooterTimer.milliseconds() >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -105,9 +105,9 @@ public class SixBall_v2_red extends OpMode {
             double elapsed = shooterTimer.milliseconds();
 
             // Pulse pattern: 700ms on, 1500ms off
-            if (elapsed < 500) {
+            if (elapsed < 400) {
                 // Intake feeding
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {  // 700 + 1500
                 // Waiting between shots
                 intakeWheels.setPower(0);
@@ -116,7 +116,7 @@ public class SixBall_v2_red extends OpMode {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 4) {
+                if (shooterPulseCount >= 3  ) {
                     // All pulses complete
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
@@ -137,8 +137,8 @@ public class SixBall_v2_red extends OpMode {
      * Start the shooting sequence (non-blocking)
      */
     private void startShooting() {
-        shooterLeft.setPower(-0.60);
-        shooterRight.setPower(-0.60);
+        shooterLeft.setPower(-0.62);
+        shooterRight.setPower(-0.62);
         shooterSpinningUp = true;
         shooterPulsing = false;
         shooterTimer.reset();
@@ -158,7 +158,7 @@ public class SixBall_v2_red extends OpMode {
                             new Pose(121.346, 124.262),  // 144 - 22.654
                             new Pose(88.374, 93.757)     // 144 - 55.626
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(45))  // 180-145, 180-135
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(35))  // 180-145, 180-135
                     .build();
 
             // Path2: Mirror X coordinates and headings
@@ -188,7 +188,7 @@ public class SixBall_v2_red extends OpMode {
                             new Pose(113.523, 84.112),   // 144 - 30.477
                             new Pose(87.925, 93.533)     // 144 - 56.075
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(45))   // 180-180, 180-135
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-135
                     .build();
         }
     }
@@ -258,7 +258,7 @@ public class SixBall_v2_red extends OpMode {
                 // Start Path4 with half intake
                 telemetry.addData("State", "Starting Path4 - Intake Half");
                 intakeWheels.setPower(-1);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
                 pathState = 8;
                 break;
@@ -268,6 +268,7 @@ public class SixBall_v2_red extends OpMode {
                 telemetry.addData("State", "Following Path4 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1);
                     telemetry.addData("State", "Path4 complete, starting shooter");
                     startShooting();
                     pathState = 9;
