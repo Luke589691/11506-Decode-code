@@ -33,12 +33,12 @@ public class twelve_ball_v2_red extends OpMode {
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
+    private boolean isSecondShot = false;
 
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
         follower = Constants.createFollower(hardwareMap);
-        // Mirrored starting pose: X = 144 - 24.464, heading = 180 - 144 = 36°
         follower.setStartingPose(new Pose(119.536, 129.411, Math.toRadians(36)));
         paths = new Paths(follower);
 
@@ -50,10 +50,9 @@ public class twelve_ball_v2_red extends OpMode {
 
     @Override
     public void loop() {
-        follower.update(); // CRITICAL: Must be called every loop
+        follower.update();
         autonomousPathUpdate();
 
-        // Telemetry
         panelsTelemetry.debug("Path State", pathState);
         panelsTelemetry.debug("Follower Busy", follower.isBusy());
         panelsTelemetry.debug("X", follower.getPose().getX());
@@ -84,13 +83,18 @@ public class twelve_ball_v2_red extends OpMode {
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /**
-     * NON-BLOCKING shooter state machine
-     * Returns true when shooting is complete
-     */
     private boolean updateShooter() {
         if (shooterSpinningUp) {
-            if (shooterTimer.milliseconds() >= 5000) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // For shots after first: reverse intake for first 100ms during ramp-up
+            if (isSecondShot && elapsed < 100) {
+                intakeWheels.setPower(1.0);
+            } else if (isSecondShot && elapsed >= 100) {
+                intakeWheels.setPower(0);
+            }
+
+            if (elapsed >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -103,26 +107,21 @@ public class twelve_ball_v2_red extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 500) {
-                // Feed artifact
-                intakeWheels.setPower(-1.0);
+            if (elapsed < 400) {
+                intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
-                // Wait between shots
                 intakeWheels.setPower(0);
             } else {
-                // Move to next pulse
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 4) {
-                    // Shooting complete
+                if (shooterPulseCount >= 3) {
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
                     shooterLeft.setPower(0);
                     shooterRight.setPower(0);
                     return true;
                 } else {
-                    // Start next pulse
                     intakeWheels.setPower(-1.0);
                 }
             }
@@ -132,14 +131,12 @@ public class twelve_ball_v2_red extends OpMode {
         return true;
     }
 
-    /**
-     * Start shooting sequence (non-blocking)
-     */
-    private void startShooting() {
-        shooterLeft.setPower(0.57);
-        shooterRight.setPower(0.57);
+    private void startShooting(boolean afterFirst) {
+        shooterLeft.setPower(-0.55);
+        shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
+        isSecondShot = afterFirst;
         shooterTimer.reset();
     }
 
@@ -147,115 +144,104 @@ public class twelve_ball_v2_red extends OpMode {
         public PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9, Path10;
 
         public Paths(Follower follower) {
-            // Path1: Mirror X coordinates and headings
             Path1 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(119.536, 129.411),  // 144 - 24.464
-                            new Pose(87.890, 105.397)    // 144 - 56.110
+                            new Pose(119.536, 129.411),
+                            new Pose(87.890, 105.397)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(36), Math.toRadians(35))  // 180-144, 180-145
+                    .setLinearHeadingInterpolation(Math.toRadians(36), Math.toRadians(35))
                     .build();
 
-            // Path2: Mirror X
             Path2 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.890, 105.397),   // 144 - 56.110
-                            new Pose(87.666, 84.299)     // 144 - 56.334
+                            new Pose(87.890, 105.397),
+                            new Pose(87.666, 84.299)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))   // 180-145, 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
                     .build();
 
-            // Path3: Mirror X
             Path3 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.666, 84.299),    // 144 - 56.334
-                            new Pose(128.738, 84.075)    // 144 - 15.262
+                            new Pose(87.666, 84.299),
+                            new Pose(128.738, 84.075)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))    // 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                     .build();
 
-            // Path4: Mirror BezierCurve control points
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(128.738, 84.075),   // 144 - 15.262
-                            new Pose(87.000, 74.000),    // 144 - 57.000
-                            new Pose(87.890, 106.070)    // 144 - 56.110
+                            new Pose(128.738, 84.075),
+                            new Pose(87.000, 74.000),
+                            new Pose(87.890, 106.070)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-145
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
                     .build();
 
-            // Path5: Mirror X
             Path5 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.890, 106.070),   // 144 - 56.110
-                            new Pose(88.564, 59.611)     // 144 - 55.436
+                            new Pose(87.890, 106.070),
+                            new Pose(88.564, 59.611)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))   // 180-145, 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
                     .build();
 
-            // Path6: Mirror X
             Path6 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.564, 59.611),    // 144 - 55.436
-                            new Pose(133.900, 60.060)    // 144 - 10.100
+                            new Pose(88.564, 59.611),
+                            new Pose(133.900, 60.060)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))    // 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                     .build();
 
-            // Path7: Mirror BezierCurve
             Path7 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(133.900, 60.060),   // 144 - 10.100
-                            new Pose(75.000, 51.000),    // 144 - 69.000
-                            new Pose(88.115, 106.070)    // 144 - 55.885
+                            new Pose(133.900, 60.060),
+                            new Pose(75.000, 51.000),
+                            new Pose(88.115, 106.070)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-145
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
                     .build();
 
-            // Path8: Mirror X
             Path8 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.115, 106.070),   // 144 - 55.885
-                            new Pose(88.564, 36.269)     // 144 - 55.436
+                            new Pose(88.115, 106.070),
+                            new Pose(88.564, 36.269)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))   // 180-145, 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
                     .build();
 
-            // Path9: Mirror X
             Path9 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.564, 36.269),    // 144 - 55.436
-                            new Pose(133.227, 35.596)    // 144 - 10.773
+                            new Pose(88.564, 36.269),
+                            new Pose(133.227, 35.596)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))    // 180-180
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                     .build();
 
-            // Path10: Mirror BezierCurve (4-point curve)
             Path10 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(133.227, 35.596),   // 144 - 10.773
-                            new Pose(81.000, 78.000),    // 144 - 63.000
-                            new Pose(68.000, 36.000),    // 144 - 76.000
-                            new Pose(88.115, 105.845)    // 144 - 55.885
+                            new Pose(133.227, 35.596),
+                            new Pose(81.000, 78.000),
+                            new Pose(68.000, 36.000),
+                            new Pose(88.115, 105.845)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-145
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
                     .build();
         }
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
-            // ===== PATH 1 → SHOOT =====
             case 0:
                 telemetry.addData("State", "Starting Path1");
                 follower.followPath(paths.Path1);
@@ -266,7 +252,7 @@ public class twelve_ball_v2_red extends OpMode {
                 telemetry.addData("State", "Path1 - Moving to shoot position");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, shooting");
-                    startShooting();
+                    startShooting(false);
                     pathState = 2;
                 }
                 break;
@@ -278,7 +264,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 2 (TRANSITION) =====
             case 3:
                 telemetry.addData("State", "Starting Path2");
                 follower.followPath(paths.Path2);
@@ -292,17 +277,16 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 3 (INTAKE AT 1/4 SPEED) =====
             case 5:
-                telemetry.addData("State", "Starting Path3 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path3 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
 
             case 6:
-                telemetry.addData("State", "Path3 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path3 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -310,7 +294,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 4 → SHOOT =====
             case 7:
                 telemetry.addData("State", "Starting Path4");
                 follower.followPath(paths.Path4);
@@ -321,7 +304,7 @@ public class twelve_ball_v2_red extends OpMode {
                 telemetry.addData("State", "Path4 - Returning to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path4 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 9;
                 }
                 break;
@@ -333,7 +316,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 5 (TRANSITION) =====
             case 10:
                 telemetry.addData("State", "Starting Path5");
                 follower.followPath(paths.Path5);
@@ -347,17 +329,16 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 6 (INTAKE AT 1/4 SPEED) =====
             case 12:
-                telemetry.addData("State", "Starting Path6 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path6 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path6, false);
                 pathState = 13;
                 break;
 
             case 13:
-                telemetry.addData("State", "Path6 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path6 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -365,7 +346,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 7 → SHOOT =====
             case 14:
                 telemetry.addData("State", "Starting Path7");
                 follower.followPath(paths.Path7);
@@ -376,7 +356,7 @@ public class twelve_ball_v2_red extends OpMode {
                 telemetry.addData("State", "Path7 - Returning to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path7 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 16;
                 }
                 break;
@@ -388,7 +368,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 8 (TRANSITION) =====
             case 17:
                 telemetry.addData("State", "Starting Path8");
                 follower.followPath(paths.Path8);
@@ -402,17 +381,16 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 9 (INTAKE AT 1/4 SPEED) =====
             case 19:
-                telemetry.addData("State", "Starting Path9 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path9 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path9, false);
                 pathState = 20;
                 break;
 
             case 20:
-                telemetry.addData("State", "Path9 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path9 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -420,7 +398,6 @@ public class twelve_ball_v2_red extends OpMode {
                 }
                 break;
 
-            // ===== PATH 10 → FINAL SHOOT =====
             case 21:
                 telemetry.addData("State", "Starting Path10");
                 follower.followPath(paths.Path10);
@@ -431,7 +408,7 @@ public class twelve_ball_v2_red extends OpMode {
                 telemetry.addData("State", "Path10 - Final return to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path10 complete, final shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 23;
                 }
                 break;
@@ -453,24 +430,3 @@ public class twelve_ball_v2_red extends OpMode {
         }
     }
 }
-
-/*
- * TWELVE BALL AUTONOMOUS (RED SIDE - NON-BLOCKING VERSION)
- *
- * Mirrored from blue side using formula: new_x = 144 - old_x
- * Headings converted: new_heading = 180° - old_heading
- *
- * SEQUENCE:
- * - Path1 → Shoot (preloaded)
- * - Path2 (transition)
- * - Path3 (intake at 1/4 speed)
- * - Path4 → Shoot
- * - Path5 (transition)
- * - Path6 (intake at 1/4 speed)
- * - Path7 → Shoot
- * - Path8 (transition)
- * - Path9 (intake at 1/4 speed)
- * - Path10 → Final Shoot
- *
- * TOTAL: 25 states (0-24), 4 shooting sequences
- */

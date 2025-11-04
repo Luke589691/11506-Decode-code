@@ -33,6 +33,7 @@ public class twelve_ball_v2_blue extends OpMode {
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
+    private boolean isSecondShot = false;
 
     @Override
     public void init() {
@@ -49,10 +50,9 @@ public class twelve_ball_v2_blue extends OpMode {
 
     @Override
     public void loop() {
-        follower.update(); // CRITICAL: Must be called every loop
+        follower.update();
         autonomousPathUpdate();
 
-        // Telemetry
         panelsTelemetry.debug("Path State", pathState);
         panelsTelemetry.debug("Follower Busy", follower.isBusy());
         panelsTelemetry.debug("X", follower.getPose().getX());
@@ -83,13 +83,18 @@ public class twelve_ball_v2_blue extends OpMode {
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /**
-     * NON-BLOCKING shooter state machine
-     * Returns true when shooting is complete
-     */
     private boolean updateShooter() {
         if (shooterSpinningUp) {
-            if (shooterTimer.milliseconds() >= 5000) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // For shots after first: reverse intake for first 100ms during ramp-up
+            if (isSecondShot && elapsed < 100) {
+                intakeWheels.setPower(1.0);
+            } else if (isSecondShot && elapsed >= 100) {
+                intakeWheels.setPower(0);
+            }
+
+            if (elapsed >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -102,26 +107,21 @@ public class twelve_ball_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 500) {
-                // Feed artifact
-                intakeWheels.setPower(-1.0);
+            if (elapsed < 400) {
+                intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
-                // Wait between shots
                 intakeWheels.setPower(0);
             } else {
-                // Move to next pulse
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 4) {
-                    // Shooting complete
+                if (shooterPulseCount >= 3) {
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
                     shooterLeft.setPower(0);
                     shooterRight.setPower(0);
                     return true;
                 } else {
-                    // Start next pulse
                     intakeWheels.setPower(-1.0);
                 }
             }
@@ -131,14 +131,12 @@ public class twelve_ball_v2_blue extends OpMode {
         return true;
     }
 
-    /**
-     * Start shooting sequence (non-blocking)
-     */
-    private void startShooting() {
-        shooterLeft.setPower(0.57);
-        shooterRight.setPower(0.57);
+    private void startShooting(boolean afterFirst) {
+        shooterLeft.setPower(-0.55);
+        shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
+        isSecondShot = afterFirst;
         shooterTimer.reset();
     }
 
@@ -223,7 +221,6 @@ public class twelve_ball_v2_blue extends OpMode {
 
     public void autonomousPathUpdate() {
         switch (pathState) {
-            // ===== PATH 1 → SHOOT =====
             case 0:
                 telemetry.addData("State", "Starting Path1");
                 follower.followPath(paths.Path1);
@@ -234,7 +231,7 @@ public class twelve_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path1 - Moving to shoot position");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, shooting");
-                    startShooting();
+                    startShooting(false);
                     pathState = 2;
                 }
                 break;
@@ -246,7 +243,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 2 (TRANSITION) =====
             case 3:
                 telemetry.addData("State", "Starting Path2");
                 follower.followPath(paths.Path2);
@@ -260,17 +256,16 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 3 (INTAKE AT 1/4 SPEED) =====
             case 5:
-                telemetry.addData("State", "Starting Path3 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path3 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
 
             case 6:
-                telemetry.addData("State", "Path3 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path3 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -278,7 +273,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 4 → SHOOT =====
             case 7:
                 telemetry.addData("State", "Starting Path4");
                 follower.followPath(paths.Path4);
@@ -289,7 +283,7 @@ public class twelve_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path4 - Returning to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path4 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 9;
                 }
                 break;
@@ -301,7 +295,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 5 (TRANSITION) =====
             case 10:
                 telemetry.addData("State", "Starting Path5");
                 follower.followPath(paths.Path5);
@@ -315,17 +308,16 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 6 (INTAKE AT 1/4 SPEED) =====
             case 12:
-                telemetry.addData("State", "Starting Path6 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path6 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path6, false);
                 pathState = 13;
                 break;
 
             case 13:
-                telemetry.addData("State", "Path6 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path6 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -333,7 +325,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 7 → SHOOT =====
             case 14:
                 telemetry.addData("State", "Starting Path7");
                 follower.followPath(paths.Path7);
@@ -344,7 +335,7 @@ public class twelve_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path7 - Returning to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path7 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 16;
                 }
                 break;
@@ -356,7 +347,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 8 (TRANSITION) =====
             case 17:
                 telemetry.addData("State", "Starting Path8");
                 follower.followPath(paths.Path8);
@@ -370,17 +360,16 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 9 (INTAKE AT 1/4 SPEED) =====
             case 19:
-                telemetry.addData("State", "Starting Path9 with intake (1/4 speed)");
+                telemetry.addData("State", "Starting Path9 with intake");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);
                 follower.followPath(paths.Path9, false);
                 pathState = 20;
                 break;
 
             case 20:
-                telemetry.addData("State", "Path9 - Intake ON (1/4 speed)");
+                telemetry.addData("State", "Path9 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
@@ -388,7 +377,6 @@ public class twelve_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 10 → FINAL SHOOT =====
             case 21:
                 telemetry.addData("State", "Starting Path10");
                 follower.followPath(paths.Path10);
@@ -399,7 +387,7 @@ public class twelve_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path10 - Final return to shoot");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path10 complete, final shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 23;
                 }
                 break;
@@ -421,27 +409,3 @@ public class twelve_ball_v2_blue extends OpMode {
         }
     }
 }
-
-/*
- * TWELVE BALL AUTONOMOUS (NON-BLOCKING VERSION)
- *
- * KEY FIXES:
- * 1. Removed all blocking sleep() calls
- * 2. Implemented non-blocking shooter state machine using ElapsedTime
- * 3. follower.update() now runs every loop iteration (CRITICAL!)
- * 4. Shooter and intake operations don't freeze the robot
- *
- * SEQUENCE:
- * - Path1 → Shoot (preloaded)
- * - Path2 (transition)
- * - Path3 (intake at 1/4 speed)
- * - Path4 → Shoot
- * - Path5 (transition)
- * - Path6 (intake at 1/4 speed)
- * - Path7 → Shoot
- * - Path8 (transition)
- * - Path9 (intake at 1/4 speed)
- * - Path10 → Final Shoot
- *
- * TOTAL: 25 states (0-24), 4 shooting sequences
- */

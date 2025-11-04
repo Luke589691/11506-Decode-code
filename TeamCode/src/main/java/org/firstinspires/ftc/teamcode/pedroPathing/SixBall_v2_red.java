@@ -34,6 +34,7 @@ public class SixBall_v2_red extends OpMode {
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
+    private boolean isSecondShot = false;
 
     @Override
     public void init() {
@@ -91,8 +92,17 @@ public class SixBall_v2_red extends OpMode {
      */
     private boolean updateShooter() {
         if (shooterSpinningUp) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // For second shot: reverse intake for first 100ms during ramp-up
+            if (isSecondShot && elapsed < 100) {
+                intakeWheels.setPower(1.0); // Reverse intake
+            } else if (isSecondShot && elapsed >= 100) {
+                intakeWheels.setPower(0); // Stop after reversal
+            }
+
             // Wait for flywheels to spin up
-            if (shooterTimer.milliseconds() >= 5000) {
+            if (elapsed >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -117,7 +127,7 @@ public class SixBall_v2_red extends OpMode {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 3  ) {
+                if (shooterPulseCount >= 3) {
                     // All pulses complete
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
@@ -137,11 +147,12 @@ public class SixBall_v2_red extends OpMode {
     /**
      * Start the shooting sequence (non-blocking)
      */
-    private void startShooting() {
+    private void startShooting(boolean secondShot) {
         shooterLeft.setPower(-0.55);
         shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
+        isSecondShot = secondShot;
         shooterTimer.reset();
     }
 
@@ -162,31 +173,31 @@ public class SixBall_v2_red extends OpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(35))  // 180-145, 180-135
                     .build();
 
-            // Path2: Mirror X coordinates and headings
+            // Path2: Mirror X coordinates and headings - Extended forward
             Path2 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
                             new Pose(88.374, 93.757),    // 144 - 55.626
-                            new Pose(88.150, 83.215)     // 144 - 55.850
+                            new Pose(88.150, 78.215)     // Extended 5 inches forward (was 83.215)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(45), Math.toRadians(0))   // 180-135, 180-180
                     .build();
 
-            // Path3: Mirror X, keep constant heading at 0°
+            // Path3: Mirror X, keep constant heading at 0° - Extended forward
             Path3 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.150, 83.215),    // 144 - 55.850
-                            new Pose(113.523, 84.112)    // 144 - 30.477
+                            new Pose(88.150, 78.215),    // Start from new Path2 end
+                            new Pose(118.523, 79.112)    // Extended 5 inches forward (was 84.112)
                     ))
                     .setConstantHeadingInterpolation(Math.toRadians(0))  // 180-180
                     .build();
 
-            // Path4: Mirror X coordinates and headings
+            // Path4: Mirror X coordinates and headings - Adjusted start point
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(120.523, 84.112),   // 144 - 30.477
+                            new Pose(118.523, 79.112),   // Start from new Path3 end
                             new Pose(87.925, 93.533)     // 144 - 56.075
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-135
@@ -207,7 +218,7 @@ public class SixBall_v2_red extends OpMode {
                 // Wait for Path1
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, starting shooter");
-                    startShooting();
+                    startShooting(false); // First shot
                     pathState = 2;
                 }
                 break;
@@ -256,8 +267,8 @@ public class SixBall_v2_red extends OpMode {
                 break;
 
             case 7:
-                // Start Path4 with half intake
-                telemetry.addData("State", "Starting Path4 - Intake Half");
+                // Start Path4 with full intake
+                telemetry.addData("State", "Starting Path4 - Intake Full");
                 intakeWheels.setPower(-1);
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
@@ -271,7 +282,7 @@ public class SixBall_v2_red extends OpMode {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1);
                     telemetry.addData("State", "Path4 complete, starting shooter");
-                    startShooting();
+                    startShooting(true); // Second shot with intake reversal
                     pathState = 9;
                 }
                 break;

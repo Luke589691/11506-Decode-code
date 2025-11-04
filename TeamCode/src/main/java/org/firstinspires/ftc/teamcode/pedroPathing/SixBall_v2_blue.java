@@ -33,6 +33,7 @@ public class SixBall_v2_blue extends OpMode {
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
+    private boolean isSecondShot = false;
 
     @Override
     public void init() {
@@ -89,8 +90,17 @@ public class SixBall_v2_blue extends OpMode {
      */
     private boolean updateShooter() {
         if (shooterSpinningUp) {
-            // Wait for flywheels to spin up
-            if (shooterTimer.milliseconds() >= 4000) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // For second shot: reverse intake for first 100ms during ramp-up
+            if (isSecondShot && elapsed < 100) {
+                intakeWheels.setPower(1.0); // Reverse intake
+            } else if (isSecondShot && elapsed >= 100) {
+                intakeWheels.setPower(0); // Stop after reversal
+            }
+
+            // Wait for flywheels to spin up (5000ms like red side)
+            if (elapsed >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -103,11 +113,11 @@ public class SixBall_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            // Pulse pattern: 700ms on, 1500ms off
-            if (elapsed < 500) {
-                // Intake feeding
-                intakeWheels.setPower(-1.0);
-            } else if (elapsed < 2200) {  // 700 + 1500
+            // Pulse pattern: 400ms on, 1800ms off (matching red side)
+            if (elapsed < 400) {
+                // Intake feeding (matching red side -0.8 power)
+                intakeWheels.setPower(-0.8);
+            } else if (elapsed < 2200) {  // 400 + 1800
                 // Waiting between shots
                 intakeWheels.setPower(0);
             } else {
@@ -115,7 +125,7 @@ public class SixBall_v2_blue extends OpMode {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 4) {
+                if (shooterPulseCount >= 3) {  // 3 pulses like red side
                     // All pulses complete
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
@@ -135,11 +145,13 @@ public class SixBall_v2_blue extends OpMode {
     /**
      * Start the shooting sequence (non-blocking)
      */
-    private void startShooting() {
-        shooterLeft.setPower(-0.60);
-        shooterRight.setPower(-0.60);
+    private void startShooting(boolean secondShot) {
+        // Matching red side shooter power -0.55
+        shooterLeft.setPower(-0.55);
+        shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
+        isSecondShot = secondShot;
         shooterTimer.reset();
     }
 
@@ -159,28 +171,31 @@ public class SixBall_v2_blue extends OpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(135))
                     .build();
 
+            // Path2: Extended forward like red side (5 inches more)
             Path2 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
                             new Pose(55.626, 93.757),
-                            new Pose(55.850, 83.215)
+                            new Pose(55.850, 78.215)  // Was 83.215, now 78.215
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
                     .build();
 
+            // Path3: Extended forward like red side (5 inches more forward, 5 inches less in X)
             Path3 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(55.850, 83.215),
-                            new Pose(30.477, 84.112)
+                            new Pose(55.850, 78.215),  // Start from new Path2 end
+                            new Pose(25.477, 79.112)   // Was (30.477, 84.112)
                     ))
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
+            // Path4: Adjusted to match new Path3 end point
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(30.477, 84.112),
+                            new Pose(25.477, 79.112),  // Start from new Path3 end
                             new Pose(56.075, 93.533)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
@@ -201,7 +216,7 @@ public class SixBall_v2_blue extends OpMode {
                 // Wait for Path1
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, starting shooter");
-                    startShooting();
+                    startShooting(false); // First shot
                     pathState = 2;
                 }
                 break;
@@ -231,10 +246,10 @@ public class SixBall_v2_blue extends OpMode {
                 break;
 
             case 5:
-                // Start Path3 with full intake
+                // Start Path3 with full intake (matching red side 0.50 power)
                 telemetry.addData("State", "Starting Path3 - Intake FULL");
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.25);
+                follower.setMaxPower(0.50);  // Was 0.25, now 0.50 like red
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
@@ -250,9 +265,10 @@ public class SixBall_v2_blue extends OpMode {
                 break;
 
             case 7:
-                // Start Path4 with half intake
-                telemetry.addData("State", "Starting Path4 - Intake Half");
-                intakeWheels.setPower(-0.5);
+                // Start Path4 with full intake (matching red side)
+                telemetry.addData("State", "Starting Path4 - Intake Full");
+                intakeWheels.setPower(-1.0);  // Was -0.5, now -1.0 like red
+                follower.setMaxPower(0.80);   // Matching red side
                 follower.followPath(paths.Path4);
                 pathState = 8;
                 break;
@@ -262,8 +278,9 @@ public class SixBall_v2_blue extends OpMode {
                 telemetry.addData("State", "Following Path4 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1);  // Reset to full power
                     telemetry.addData("State", "Path4 complete, starting shooter");
-                    startShooting();
+                    startShooting(true); // Second shot with intake reversal
                     pathState = 9;
                 }
                 break;

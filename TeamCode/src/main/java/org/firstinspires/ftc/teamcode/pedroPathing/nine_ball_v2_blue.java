@@ -36,18 +36,17 @@ public class nine_ball_v2_blue extends OpMode {
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
+    private boolean isSecondShot = false;
+    private int shootCount = 0;
 
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         follower = Constants.createFollower(hardwareMap);
-        // FIXED: Starting pose matches Path1's starting point
         follower.setStartingPose(new Pose(26.029, 131.050, Math.toRadians(145)));
 
         paths = new Paths(follower);
-
-        // Initialize hardware
         initializeIntakeShooter();
 
         panelsTelemetry.debug("Status", "Initialized");
@@ -56,10 +55,9 @@ public class nine_ball_v2_blue extends OpMode {
 
     @Override
     public void loop() {
-        follower.update(); // CRITICAL: Must be called every loop
+        follower.update();
         autonomousPathUpdate();
 
-        // Telemetry
         panelsTelemetry.debug("Path State", pathState);
         panelsTelemetry.debug("Follower Busy", follower.isBusy());
         panelsTelemetry.debug("X", follower.getPose().getX());
@@ -90,13 +88,18 @@ public class nine_ball_v2_blue extends OpMode {
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /**
-     * NON-BLOCKING shooter state machine
-     * Returns true when shooting is complete
-     */
     private boolean updateShooter() {
         if (shooterSpinningUp) {
-            if (shooterTimer.milliseconds() >= 4000) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // For shots after first: reverse intake for first 100ms during ramp-up
+            if (isSecondShot && elapsed < 100) {
+                intakeWheels.setPower(1.0);
+            } else if (isSecondShot && elapsed >= 100) {
+                intakeWheels.setPower(0);
+            }
+
+            if (elapsed >= 5000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -109,15 +112,15 @@ public class nine_ball_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 500) {
-                intakeWheels.setPower(-1.0);
+            if (elapsed < 400) {
+                intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
                 intakeWheels.setPower(0);
             } else {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 4) {
+                if (shooterPulseCount >= 3) {
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
                     shooterLeft.setPower(0);
@@ -133,29 +136,18 @@ public class nine_ball_v2_blue extends OpMode {
         return true;
     }
 
-    /**
-     * Start shooting sequence (non-blocking)
-     */
-    private void startShooting() {
-        shooterLeft.setPower(-0.60);
-        shooterRight.setPower(-0.60);
+    private void startShooting(boolean afterFirst) {
+        shooterLeft.setPower(-0.55);
+        shooterRight.setPower(-0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
+        isSecondShot = afterFirst;
         shooterTimer.reset();
+        shootCount++;
     }
 
     public static class Paths {
-        public PathChain Path1;
-        public PathChain Path2;
-        public PathChain Path3;
-        public PathChain Path4;
-        public PathChain Path5;
-        public PathChain Path6;
-        public PathChain Path7;
-        public PathChain Path8;
-        public PathChain Path9;
-        public PathChain Path10;
-        public PathChain Path11;
+        public PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9, Path10, Path11;
 
         public Paths(Follower follower) {
             Path1 = follower
@@ -267,7 +259,6 @@ public class nine_ball_v2_blue extends OpMode {
 
     public void autonomousPathUpdate() {
         switch (pathState) {
-            // ===== PATH 1 → SHOOT =====
             case 0:
                 telemetry.addData("State", "Starting Path1");
                 follower.followPath(paths.Path1);
@@ -277,7 +268,7 @@ public class nine_ball_v2_blue extends OpMode {
             case 1:
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, shooting");
-                    startShooting();
+                    startShooting(false);
                     pathState = 2;
                 }
                 break;
@@ -289,7 +280,6 @@ public class nine_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 2 → PATH 3 (INTAKE) =====
             case 3:
                 telemetry.addData("State", "Starting Path2");
                 follower.followPath(paths.Path2);
@@ -300,7 +290,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path2 complete, starting Path3 with intake");
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.25);
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path3, false);
                     pathState = 5;
                 }
@@ -310,24 +300,26 @@ public class nine_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path3 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     pathState = 6;
                 }
                 break;
 
-            // ===== PATH 4 (INTAKE HALF) → SHOOT =====
             case 6:
-                telemetry.addData("State", "Starting Path4 with half intake");
-                intakeWheels.setPower(-0.5);
+                telemetry.addData("State", "Starting Path4 with intake");
+                intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
                 pathState = 7;
                 break;
 
             case 7:
-                telemetry.addData("State", "Path4 - Intake Half");
+                telemetry.addData("State", "Path4 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     telemetry.addData("State", "Path4 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 8;
                 }
                 break;
@@ -339,7 +331,6 @@ public class nine_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 5 → PATH 6 (INTAKE) =====
             case 9:
                 telemetry.addData("State", "Starting Path5");
                 follower.followPath(paths.Path5);
@@ -350,7 +341,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path5 complete, starting Path6 with intake");
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.25);
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path6, false);
                     pathState = 11;
                 }
@@ -360,24 +351,26 @@ public class nine_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path6 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     pathState = 12;
                 }
                 break;
 
-            // ===== PATH 7 (INTAKE HALF) → SHOOT =====
             case 12:
-                telemetry.addData("State", "Starting Path7 with half intake");
-                intakeWheels.setPower(-0.5);
+                telemetry.addData("State", "Starting Path7 with intake");
+                intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path7);
                 pathState = 13;
                 break;
 
             case 13:
-                telemetry.addData("State", "Path7 - Intake Half");
+                telemetry.addData("State", "Path7 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     telemetry.addData("State", "Path7 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 14;
                 }
                 break;
@@ -389,7 +382,6 @@ public class nine_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 8 → PATH 9 (INTAKE) =====
             case 15:
                 telemetry.addData("State", "Starting Path8");
                 follower.followPath(paths.Path8);
@@ -400,7 +392,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path8 complete, starting Path9 with intake");
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.25);
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path9, false);
                     pathState = 17;
                 }
@@ -410,24 +402,26 @@ public class nine_ball_v2_blue extends OpMode {
                 telemetry.addData("State", "Path9 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     pathState = 18;
                 }
                 break;
 
-            // ===== PATH 10 (INTAKE HALF) → SHOOT =====
             case 18:
-                telemetry.addData("State", "Starting Path10 with half intake");
-                intakeWheels.setPower(-0.5);
+                telemetry.addData("State", "Starting Path10 with intake");
+                intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path10);
                 pathState = 19;
                 break;
 
             case 19:
-                telemetry.addData("State", "Path10 - Intake Half");
+                telemetry.addData("State", "Path10 - Intake ON");
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    follower.setMaxPower(1.0);
                     telemetry.addData("State", "Path10 complete, shooting");
-                    startShooting();
+                    startShooting(true);
                     pathState = 20;
                 }
                 break;
@@ -439,7 +433,6 @@ public class nine_ball_v2_blue extends OpMode {
                 }
                 break;
 
-            // ===== PATH 11 (OPTIONAL FINAL PATH) =====
             case 21:
                 telemetry.addData("State", "Starting Path11 (final)");
                 follower.followPath(paths.Path11);
@@ -464,26 +457,3 @@ public class nine_ball_v2_blue extends OpMode {
         }
     }
 }
-
-/*
- * NINE BALL AUTONOMOUS SEQUENCE:
- *
- * The robot follows this pattern (typical "sample collection" autonomous):
- * 1. Path1 → Shoot (preloaded samples)
- * 2. Path2+Path3 → Collect samples (intake full speed)
- * 3. Path4 → Return and shoot (intake half speed for alignment)
- * 4. Path5+Path6 → Collect more samples
- * 5. Path7 → Return and shoot
- * 6. Path8+Path9 → Collect final samples
- * 7. Path10 → Return and shoot
- * 8. Path11 → Move to parking/final position
- *
- * INTAKE STRATEGY:
- * - Full speed (-1.0) during collection paths (Path3, Path6, Path9)
- * - Half speed (-0.5) during return paths (Path4, Path7, Path10) for better control
- * - Stopped during shooting sequences
- *
- * TOTAL STATES: 24 states (0-23)
- * - Pattern repeats: Path → Collect → Return → Shoot (x3 cycles)
- * - Final Path11 for positioning
- */
