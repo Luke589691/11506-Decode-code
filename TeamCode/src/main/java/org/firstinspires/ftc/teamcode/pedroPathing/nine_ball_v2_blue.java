@@ -109,7 +109,7 @@ public class nine_ball_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 700) {
+            if (elapsed < 500) {
                 intakeWheels.setPower(-1.0);
             } else if (elapsed < 2200) {
                 intakeWheels.setPower(0);
@@ -300,6 +300,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path2 complete, starting Path3 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path3, false);
                     pathState = 5;
                 }
@@ -349,6 +350,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path5 complete, starting Path6 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path6, false);
                     pathState = 11;
                 }
@@ -398,6 +400,7 @@ public class nine_ball_v2_blue extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path8 complete, starting Path9 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path9, false);
                     pathState = 17;
                 }

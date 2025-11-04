@@ -232,37 +232,6 @@ public class nine_ball_v2_red extends OpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-145
                     .build();
 
-            // Path8: Mirror BezierCurve
-            Path8 = follower
-                    .pathBuilder()
-                    .addPath(new BezierCurve(
-                            new Pose(71.741, 87.410),    // 144 - 72.259
-                            new Pose(79.000, 96.000),    // 144 - 65.000
-                            new Pose(104.504, 36.000)    // 144 - 39.496
-                    ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))   // 180-145, 180-180
-                    .build();
-
-            // Path9: Mirror X
-            Path9 = follower
-                    .pathBuilder()
-                    .addPath(new BezierLine(
-                            new Pose(104.504, 36.000),   // 144 - 39.496
-                            new Pose(128.201, 36.388)    // 144 - 15.799
-                    ))
-                    .setConstantHeadingInterpolation(Math.toRadians(0))  // 180-180
-                    .build();
-
-            // Path10: Mirror BezierCurve
-            Path10 = follower
-                    .pathBuilder()
-                    .addPath(new BezierCurve(
-                            new Pose(128.201, 36.388),   // 144 - 15.799
-                            new Pose(98.000, 75.000),    // 144 - 46.000
-                            new Pose(71.871, 87.410)     // 144 - 72.129
-                    ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))   // 180-180, 180-145
-                    .build();
 
             // Path11: Mirror BezierCurve
             Path11 = follower
@@ -312,6 +281,7 @@ public class nine_ball_v2_red extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path2 complete, starting Path3 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path3, false);
                     pathState = 5;
                 }
@@ -361,6 +331,7 @@ public class nine_ball_v2_red extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path5 complete, starting Path6 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path6, false);
                     pathState = 11;
                 }
@@ -410,6 +381,7 @@ public class nine_ball_v2_red extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path8 complete, starting Path9 with intake");
                     intakeWheels.setPower(-1.0);
+                    follower.setMaxPower(0.25);
                     follower.followPath(paths.Path9, false);
                     pathState = 17;
                 }

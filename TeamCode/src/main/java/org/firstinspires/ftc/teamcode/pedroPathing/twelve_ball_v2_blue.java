@@ -102,10 +102,10 @@ public class twelve_ball_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 400) {
+            if (elapsed < 500) {
                 // Feed artifact
                 intakeWheels.setPower(-1.0);
-            } else if (elapsed < 1900) {
+            } else if (elapsed < 2200) {
                 // Wait between shots
                 intakeWheels.setPower(0);
             } else {

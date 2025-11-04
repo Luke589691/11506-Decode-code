@@ -105,7 +105,7 @@ public class SixBall_v2_red extends OpMode {
             double elapsed = shooterTimer.milliseconds();
 
             // Pulse pattern: 700ms on, 1500ms off
-            if (elapsed < 700) {
+            if (elapsed < 500) {
                 // Intake feeding
                 intakeWheels.setPower(-1.0);
             } else if (elapsed < 2200) {  // 700 + 1500
@@ -239,6 +239,7 @@ public class SixBall_v2_red extends OpMode {
                 // Start Path3 with full intake
                 telemetry.addData("State", "Starting Path3 - Intake FULL");
                 intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.25);
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
@@ -256,7 +257,8 @@ public class SixBall_v2_red extends OpMode {
             case 7:
                 // Start Path4 with half intake
                 telemetry.addData("State", "Starting Path4 - Intake Half");
-                intakeWheels.setPower(-0.5);
+                intakeWheels.setPower(-1);
+                follower.setMaxPower(0.25);
                 follower.followPath(paths.Path4);
                 pathState = 8;
                 break;
