@@ -154,9 +154,24 @@ public class nine_ball_v2_red extends OpMode {
                     .pathBuilder()
                     .addPath(new BezierLine(
                             new Pose(117.971, 131.050),
-                            new Pose(71.353, 87.281)
+                            new Pose(88.374, 93.757)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(35))
+                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(30))
                     .build();
 
             Path2 = follower
@@ -166,7 +181,7 @@ public class nine_ball_v2_red extends OpMode {
                             new Pose(79.000, 93.000),
                             new Pose(99.712, 84.691)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
+                    .setLinearHeadingInterpolation(Math.toRadians(30), Math.toRadians(0))
                     .build();
 
             Path3 = follower
@@ -184,7 +199,7 @@ public class nine_ball_v2_red extends OpMode {
                             new Pose(125.353, 84.043),
                             new Pose(71.612, 87.410)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(30))
                     .build();
 
             Path5 = follower
@@ -194,7 +209,7 @@ public class nine_ball_v2_red extends OpMode {
                             new Pose(53.000, 53.000),
                             new Pose(100.101, 60.086)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(35), Math.toRadians(0))
+                    .setLinearHeadingInterpolation(Math.toRadians(30), Math.toRadians(0))
                     .build();
 
             Path6 = follower

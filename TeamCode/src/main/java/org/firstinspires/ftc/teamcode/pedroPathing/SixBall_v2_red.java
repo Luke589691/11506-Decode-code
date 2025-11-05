@@ -178,7 +178,7 @@ public class SixBall_v2_red extends OpMode {
                     .pathBuilder()
                     .addPath(new BezierLine(
                             new Pose(88.374, 93.757),    // 144 - 55.626
-                            new Pose(88.150, 78.215)     // Extended 5 inches forward (was 83.215)
+                            new Pose(95.150, 78.215)     // Extended 5 inches forward (was 83.215)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(45), Math.toRadians(0))   // 180-135, 180-180
                     .build();
@@ -251,7 +251,7 @@ public class SixBall_v2_red extends OpMode {
                 // Start Path3 with full intake
                 telemetry.addData("State", "Starting Path3 - Intake FULL");
                 intakeWheels.setPower(-1);
-                follower.setMaxPower(0.50);
+                follower.setMaxPower(0.10);
                 follower.followPath(paths.Path3, false);
                 pathState = 6;
                 break;
@@ -260,7 +260,7 @@ public class SixBall_v2_red extends OpMode {
                 // Wait for Path3
                 telemetry.addData("State", "Following Path3 - Intake ON");
                 if (!follower.isBusy()) {
-                    intakeWheels.setPower(0);
+                    intakeWheels.setPower(-0.5);
                     telemetry.addData("State", "Path3 complete - Intake OFF");
                     pathState = 7;
                 }
