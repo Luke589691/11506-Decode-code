@@ -116,7 +116,7 @@ public class tacoDecode extends LinearOpMode {
     // DEFAULT POWERS
     private static final double DEFAULT_SHOOTER_POWER = 0.6;
     private static final double HUMAN_PLAYER_SHOOTER_POWER = -1.0;  // Full reverse
-    private static final double HUMAN_PLAYER_INTAKE_POWER = -0.5;   // Half speed reverse
+    private static final double HUMAN_PLAYER_INTAKE_POWER = 0.5;   // Half speed reverse
     // private static final double SMOOTHING_FACTOR = 0.85;  // COMMENTED OUT - NOT USED
     // private static final double SPIN_GAIN = 0.01;  // COMMENTED OUT - NOT USED
     // private static final double TILT_GAIN = 0.01;  // COMMENTED OUT - NOT USED
