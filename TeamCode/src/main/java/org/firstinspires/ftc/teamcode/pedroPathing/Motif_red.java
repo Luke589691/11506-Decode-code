@@ -71,6 +71,7 @@ public class Motif_red extends LinearOpMode {
     public DcMotorEx frontRight = null;
     public DcMotorEx backRight = null;
 
+
     // Custom logging function to support telemetry and Panels
     private void log(String caption, Object... text) {
         if (text.length == 1) {

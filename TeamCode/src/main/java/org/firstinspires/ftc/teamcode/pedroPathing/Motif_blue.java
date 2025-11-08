@@ -157,8 +157,9 @@ public class Motif_blue extends LinearOpMode {
         frontRight.setDirection(DcMotor.Direction.FORWARD);
         backRight.setDirection(DcMotor.Direction.FORWARD);
 
-        shooterLeft.setDirection(DcMotor.Direction.FORWARD);
-        shooterRight.setDirection(DcMotor.Direction.REVERSE);
+
+    shooterLeft.setDirection(DcMotor.Direction.REVERSE);
+        shooterRight.setDirection(DcMotor.Direction.REVERSE);;
 
         // Set zero power behavior
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

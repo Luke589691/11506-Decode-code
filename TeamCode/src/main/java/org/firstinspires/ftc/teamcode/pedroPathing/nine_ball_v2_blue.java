@@ -51,6 +51,8 @@ public class nine_ball_v2_blue extends OpMode {
 
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
+        shooterLeft.setDirection(DcMotor.Direction.REVERSE);
+        shooterRight.setDirection(DcMotor.Direction.REVERSE);
     }
 
     @Override

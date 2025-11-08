@@ -46,6 +46,9 @@ public class twelve_ball_v2_red extends OpMode {
 
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
+
+        shooterLeft.setDirection(DcMotor.Direction.REVERSE);
+        shooterRight.setDirection(DcMotor.Direction.REVERSE);
     }
 
     @Override
