@@ -170,7 +170,7 @@ public class SixBall_v2_blue extends OpMode {
                             new Pose(22.654, 124.262),
                             new Pose(55.626, 93.757)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(135))
+                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(125))
                     .build();
 
             // Path2: Extended forward like red side (5 inches more)

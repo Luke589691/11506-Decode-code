@@ -114,7 +114,7 @@ public class nine_ball_v2_blue extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 400) {
+            if (elapsed < 600) {
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
                 intakeWheels.setPower(0);
@@ -139,8 +139,8 @@ public class nine_ball_v2_blue extends OpMode {
     }
 
     private void startShooting(boolean afterFirst) {
-        shooterLeft.setPower(-0.55);
-        shooterRight.setPower(-0.55);
+        shooterLeft.setPower(0.67);
+        shooterRight.setPower(0.67);
         shooterSpinningUp = true;
         shooterPulsing = false;
         isSecondShot = afterFirst;
