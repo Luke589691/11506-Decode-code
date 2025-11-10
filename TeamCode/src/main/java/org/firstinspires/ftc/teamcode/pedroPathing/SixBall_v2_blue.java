@@ -149,8 +149,8 @@ public class SixBall_v2_blue extends OpMode {
      */
     private void startShooting(boolean secondShot) {
         // Matching red side shooter power -0.55
-        shooterLeft.setPower(-0.55);
-        shooterRight.setPower(-0.55);
+        shooterLeft.setPower(0.55);
+        shooterRight.setPower(0.55);
         shooterSpinningUp = true;
         shooterPulsing = false;
         isSecondShot = secondShot;
@@ -170,7 +170,7 @@ public class SixBall_v2_blue extends OpMode {
                             new Pose(22.654, 124.262),
                             new Pose(55.626, 93.757)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(125))
+                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(110))
                     .build();
 
             // Path2: Extended forward like red side (5 inches more)
