@@ -21,6 +21,9 @@ import java.util.List;
 @TeleOp(name = "tacoDecode", group = "Competition")
 public class tacoDecode extends LinearOpMode {
 
+    private Servo tiltLeft;
+    private Servo tiltRight;
+
     // ========================================
     // EASY TUNING AREA - ADJUST THESE VALUES
     // ========================================
@@ -170,7 +173,6 @@ public class tacoDecode extends LinearOpMode {
     // private double spinPosition = SPIN_CENTER;  // COMMENTED OUT - NOT USED
     // private double tiltPosition = 0.2;  // COMMENTED OUT - NOT USED
     private double currentVoltage = 12.5;
-
     // Smoothing for Turret Tracking (COMMENTED OUT - NOT USED)
     // private double smoothedXError = 0.0;
     // private double smoothedYError = 0.0;
@@ -193,6 +195,12 @@ public class tacoDecode extends LinearOpMode {
         // Limelighttilt = hardwareMap.get(Servo.class, "Limelighttilt");
 
         colorSensor = hardwareMap.get(ColorSensor.class, "colorSensor");
+
+        tiltRight = hardwareMap.get(Servo.class, "tiltRight");
+        tiltLeft = hardwareMap.get(Servo.class, "servoTest");
+
+
+
 
         // REVERSED SHOOTER DIRECTIONS
         shooterLeft.setDirection(DcMotor.Direction.REVERSE);
