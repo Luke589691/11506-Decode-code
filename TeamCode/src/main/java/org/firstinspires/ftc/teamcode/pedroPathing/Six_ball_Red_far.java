@@ -31,6 +31,7 @@ public class Six_ball_Red_far extends OpMode {
 
     // Non-blocking timers
     private ElapsedTime shooterTimer = new ElapsedTime();
+    private ElapsedTime generalTimer = new ElapsedTime();
     private int shooterPulseCount = 0;
     private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
@@ -101,7 +102,7 @@ public class Six_ball_Red_far extends OpMode {
                 intakeWheels.setPower(0);
             }
 
-            if (elapsed >= 7000) {
+            if (elapsed >= 6000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -114,23 +115,41 @@ public class Six_ball_Red_far extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            if (elapsed < 10000) {
+            if (elapsed < 500) {
+                // Pulse phase
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
+                // Wait phase
                 intakeWheels.setPower(0);
             } else {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 5) {
+                if (shooterPulseCount >= 2) {
+                    // After 2 pulses, switch to 3 seconds full power
                     shooterPulsing = false;
-                    intakeWheels.setPower(0);
-                    shooterLeft.setPower(0);
-                    shooterRight.setPower(0);
-                    return true;
+                    intakeWheels.setPower(-1.0);
+                    shooterTimer.reset();
+                    generalTimer.reset();
                 } else {
+                    // Continue pulsing
                     intakeWheels.setPower(-1.0);
                 }
+            }
+            return false;
+        }
+
+        // Full power phase after pulsing (only when shooterPulsing is false)
+        if (shooterPulseCount >= 2 && !shooterSpinningUp) {
+            double elapsed = generalTimer.milliseconds();
+
+            if (elapsed >= 3000) {
+                // Done with shooting sequence
+                intakeWheels.setPower(0);
+                shooterLeft.setPower(0);
+                shooterRight.setPower(0);
+                shooterPulseCount = 0; // Reset for next shot
+                return true;
             }
             return false;
         }
@@ -139,8 +158,8 @@ public class Six_ball_Red_far extends OpMode {
     }
 
     private void startShooting(boolean afterFirst) {
-        shooterLeft.setPower(0.725);
-        shooterRight.setPower(0.725);
+        shooterLeft.setPower(0.70);
+        shooterRight.setPower(0.70);
         shooterSpinningUp = true;
         shooterPulsing = false;
         isSecondShot = afterFirst;
@@ -153,8 +172,6 @@ public class Six_ball_Red_far extends OpMode {
 
         public Paths(Follower follower) {
             // Path1: Starting position to first scoring position
-            // Original blue: (64.662, 0.851) to (61.046, 17.016)
-            // Red mirrored: Y = 144 - original_Y
             Path1 = follower
                     .pathBuilder()
                     .addPath(
@@ -163,12 +180,10 @@ public class Six_ball_Red_far extends OpMode {
                                     new Pose(61.046, 126.984)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(250))
+                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(245))
                     .build();
 
             // Path2: First scoring to sample pickup area
-            // Original blue: (61.046, 17.016) via (50.411, 23.397) to (46.157, 30.629)
-            // Red mirrored
             Path2 = follower
                     .pathBuilder()
                     .addPath(
@@ -182,8 +197,6 @@ public class Six_ball_Red_far extends OpMode {
                     .build();
 
             // Path3: Pick up sample and go to observation zone
-            // Original blue: (46.157, 30.629) to (10.635, 30.629)
-            // Red mirrored
             Path3 = follower
                     .pathBuilder()
                     .addPath(
@@ -196,8 +209,6 @@ public class Six_ball_Red_far extends OpMode {
                     .build();
 
             // Path4: Return from observation zone to sample area
-            // Original blue: (10.635, 30.629) to (46.157, 29.991)
-            // Red mirrored
             Path4 = follower
                     .pathBuilder()
                     .addPath(
@@ -210,8 +221,6 @@ public class Six_ball_Red_far extends OpMode {
                     .build();
 
             // Path5: Sample area back to scoring position
-            // Original blue: (46.157, 29.991) via (50.198, 23.185) to (61.046, 17.229)
-            // Red mirrored
             Path5 = follower
                     .pathBuilder()
                     .addPath(
@@ -221,7 +230,7 @@ public class Six_ball_Red_far extends OpMode {
                                     new Pose(61.046, 126.771)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(250))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(245))
                     .build();
         }
     }
@@ -261,7 +270,7 @@ public class Six_ball_Red_far extends OpMode {
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path2 complete, starting Path3 with intake");
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.50);
+                    follower.setMaxPower(0.65);
                     follower.followPath(paths.Path3, false);
                     pathState = 5;
                 }
@@ -270,42 +279,27 @@ public class Six_ball_Red_far extends OpMode {
             case 5:
                 telemetry.addData("State", "Path3 - Intake ON (to observation zone)");
                 if (!follower.isBusy()) {
+                    // Stop intake, we pushed sample into observation zone
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
-                    telemetry.addData("State", "Path3 complete, shooting sample");
-                    startShooting(true);
+                    telemetry.addData("State", "Path3 complete, starting Path4");
                     pathState = 6;
                 }
                 break;
 
             case 6:
-                telemetry.addData("State", "Shooting (2nd - Sample)");
-                if (updateShooter()) {
-                    pathState = 7;
-                }
-                break;
-
-            case 7:
-                telemetry.addData("State", "Starting Path4 with intake");
-                intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.80);
+                telemetry.addData("State", "Starting Path4 - Return to samples");
                 follower.followPath(paths.Path4);
-                pathState = 8;
-                break;
-
-            case 8:
-                telemetry.addData("State", "Path4 - Intake ON (return to samples)");
-                if (!follower.isBusy()) {
-                    intakeWheels.setPower(0);
-                    follower.setMaxPower(1.0);
-                    pathState = 9;
-                }
+                pathState = 9;
                 break;
 
             case 9:
-                telemetry.addData("State", "Starting Path5 - Return to scoring");
-                follower.followPath(paths.Path5);
-                pathState = 10;
+                telemetry.addData("State", "Path4 - Returning");
+                if (!follower.isBusy()) {
+                    telemetry.addData("State", "Path4 complete, starting Path5");
+                    follower.followPath(paths.Path5);
+                    pathState = 10;
+                }
                 break;
 
             case 10:
@@ -318,7 +312,7 @@ public class Six_ball_Red_far extends OpMode {
                 break;
 
             case 11:
-                telemetry.addData("State", "Shooting (3rd - Final)");
+                telemetry.addData("State", "Shooting (2nd - Final)");
                 if (updateShooter()) {
                     pathState = 12;
                 }
