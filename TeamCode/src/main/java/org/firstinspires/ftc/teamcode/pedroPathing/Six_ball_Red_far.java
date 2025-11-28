@@ -158,8 +158,8 @@ public class Six_ball_Red_far extends OpMode {
     }
 
     private void startShooting(boolean afterFirst) {
-        shooterLeft.setPower(0.70);
-        shooterRight.setPower(0.70);
+        shooterLeft.setPower(0.66);
+        shooterRight.setPower(0.66);
         shooterSpinningUp = true;
         shooterPulsing = false;
         isSecondShot = afterFirst;
@@ -180,7 +180,7 @@ public class Six_ball_Red_far extends OpMode {
                                     new Pose(61.046, 126.984)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(245))
+                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(247.5))
                     .build();
 
             // Path2: First scoring to sample pickup area
@@ -230,7 +230,7 @@ public class Six_ball_Red_far extends OpMode {
                                     new Pose(61.046, 126.771)
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(245))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(247.5))
                     .build();
         }
     }
