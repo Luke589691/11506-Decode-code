@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -28,14 +29,13 @@ public class Six_ball_Red_far extends OpMode {
     public DcMotorEx intakeWheels = null;
     public DcMotorEx shooterLeft = null;
     public DcMotorEx shooterRight = null;
+    public Servo stop = null;
 
     // Non-blocking timers
     private ElapsedTime shooterTimer = new ElapsedTime();
-    private ElapsedTime generalTimer = new ElapsedTime();
     private int shooterPulseCount = 0;
-    private boolean shooterSpinningUp = false;
     private boolean shooterPulsing = false;
-    private boolean isSecondShot = false;
+    private boolean isFirstShot = true;
     private int shootCount = 0;
 
     @Override
@@ -43,11 +43,14 @@ public class Six_ball_Red_far extends OpMode {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         follower = Constants.createFollower(hardwareMap);
-        // Red far starting position (mirrored from blue: 72, 8 -> 72, 136)
         follower.setStartingPose(new Pose(72, 136, Math.toRadians(270)));
 
         paths = new Paths(follower);
         initializeIntakeShooter();
+
+        // Start shooter immediately
+        shooterLeft.setPower(0.66);
+        shooterRight.setPower(0.66);
 
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.debug("Alliance", "RED FAR");
@@ -81,6 +84,7 @@ public class Six_ball_Red_far extends OpMode {
         shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
         shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
         intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
+        stop = hardwareMap.get(Servo.class, "stop");
 
         shooterLeft.setDirection(DcMotor.Direction.REVERSE);
         shooterRight.setDirection(DcMotor.Direction.REVERSE);
@@ -89,32 +93,34 @@ public class Six_ball_Red_far extends OpMode {
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        stop.setPosition(0.9); // Start with stopper closed
     }
 
     private boolean updateShooter() {
-        if (shooterSpinningUp) {
-            double elapsed = shooterTimer.milliseconds();
+        double elapsed = shooterTimer.milliseconds();
 
-            // For shots after first: reverse intake for first 100ms during ramp-up
-            if (isSecondShot && elapsed < 100) {
+        // First shot only: wait for spin up
+        if (isFirstShot && elapsed < 6000) {
+            // For shots after first: reverse intake for first 100ms during wait
+            if (!isFirstShot && elapsed < 100) {
                 intakeWheels.setPower(1.0);
-            } else if (isSecondShot && elapsed >= 100) {
+            } else if (!isFirstShot && elapsed >= 100) {
                 intakeWheels.setPower(0);
-            }
-
-            if (elapsed >= 6000) {
-                shooterSpinningUp = false;
-                shooterPulsing = true;
-                shooterPulseCount = 0;
-                shooterTimer.reset();
-                intakeWheels.setPower(-1.0);
             }
             return false;
         }
 
-        if (shooterPulsing) {
-            double elapsed = shooterTimer.milliseconds();
+        // After spin-up (or immediately for subsequent shots), start pulsing
+        if (!shooterPulsing) {
+            shooterPulsing = true;
+            shooterPulseCount = 0;
+            shooterTimer.reset();
+            intakeWheels.setPower(-1.0);
+            stop.setPosition(0); // Open stopper
+        }
 
+        if (shooterPulsing) {
             if (elapsed < 500) {
                 // Pulse phase
                 intakeWheels.setPower(-0.8);
@@ -130,7 +136,6 @@ public class Six_ball_Red_far extends OpMode {
                     shooterPulsing = false;
                     intakeWheels.setPower(-1.0);
                     shooterTimer.reset();
-                    generalTimer.reset();
                 } else {
                     // Continue pulsing
                     intakeWheels.setPower(-1.0);
@@ -139,39 +144,32 @@ public class Six_ball_Red_far extends OpMode {
             return false;
         }
 
-        // Full power phase after pulsing (only when shooterPulsing is false)
-        if (shooterPulseCount >= 2 && !shooterSpinningUp) {
-            double elapsed = generalTimer.milliseconds();
-
-            if (elapsed >= 3000) {
-                // Done with shooting sequence
-                intakeWheels.setPower(0);
-                shooterLeft.setPower(0);
-                shooterRight.setPower(0);
-                shooterPulseCount = 0; // Reset for next shot
-                return true;
-            }
-            return false;
+        // Full power phase after pulsing
+        if (elapsed >= 3000) {
+            // Done with shooting sequence
+            intakeWheels.setPower(0);
+            stop.setPosition(0.9); // Close stopper
+            shooterPulseCount = 0;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
-    private void startShooting(boolean afterFirst) {
-        shooterLeft.setPower(0.66);
-        shooterRight.setPower(0.66);
-        shooterSpinningUp = true;
+    private void startShooting() {
         shooterPulsing = false;
-        isSecondShot = afterFirst;
         shooterTimer.reset();
         shootCount++;
+
+        if (isFirstShot) {
+            isFirstShot = false;
+        }
     }
 
     public static class Paths {
         public PathChain Path1, Path2, Path3, Path4, Path5;
 
         public Paths(Follower follower) {
-            // Path1: Starting position to first scoring position
             Path1 = follower
                     .pathBuilder()
                     .addPath(
@@ -183,7 +181,6 @@ public class Six_ball_Red_far extends OpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(247.5))
                     .build();
 
-            // Path2: First scoring to sample pickup area
             Path2 = follower
                     .pathBuilder()
                     .addPath(
@@ -196,7 +193,6 @@ public class Six_ball_Red_far extends OpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(250), Math.toRadians(180))
                     .build();
 
-            // Path3: Pick up sample and go to observation zone
             Path3 = follower
                     .pathBuilder()
                     .addPath(
@@ -208,7 +204,6 @@ public class Six_ball_Red_far extends OpMode {
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
-            // Path4: Return from observation zone to sample area
             Path4 = follower
                     .pathBuilder()
                     .addPath(
@@ -220,7 +215,6 @@ public class Six_ball_Red_far extends OpMode {
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
-            // Path5: Sample area back to scoring position
             Path5 = follower
                     .pathBuilder()
                     .addPath(
@@ -247,7 +241,7 @@ public class Six_ball_Red_far extends OpMode {
                 telemetry.addData("State", "Path1 - Moving");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path1 complete, shooting preload");
-                    startShooting(false);
+                    startShooting();
                     pathState = 2;
                 }
                 break;
@@ -279,7 +273,6 @@ public class Six_ball_Red_far extends OpMode {
             case 5:
                 telemetry.addData("State", "Path3 - Intake ON (to observation zone)");
                 if (!follower.isBusy()) {
-                    // Stop intake, we pushed sample into observation zone
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     telemetry.addData("State", "Path3 complete, starting Path4");
@@ -306,7 +299,7 @@ public class Six_ball_Red_far extends OpMode {
                 telemetry.addData("State", "Path5 - Moving to scoring");
                 if (!follower.isBusy()) {
                     telemetry.addData("State", "Path5 complete, shooting final sample");
-                    startShooting(true);
+                    startShooting();
                     pathState = 11;
                 }
                 break;

@@ -10,16 +10,33 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "Nine_ball_blue_far", group = "Autonomous")
-@Configurable // Panels
+@Configurable
 public class Nine_ball_blue_far extends OpMode {
 
-    private TelemetryManager panelsTelemetry; // Panels Telemetry instance
-    public Follower follower; // Pedro Pathing follower instance
-    private int pathState; // Current autonomous path state (state machine)
-    private Paths paths; // Paths defined in the Paths class
+    private TelemetryManager panelsTelemetry;
+    public Follower follower;
+    private int pathState = 0;
+    private Paths paths;
+
+    // Hardware
+    public DcMotorEx intakeWheels = null;
+    public DcMotorEx shooterLeft = null;
+    public DcMotorEx shooterRight = null;
+    public Servo stop = null;
+
+    // Non-blocking timers
+    private ElapsedTime shooterTimer = new ElapsedTime();
+    private int shooterPulseCount = 0;
+    private boolean shooterSpinningUp = false;
+    private boolean shooterPulsing = false;
+    private boolean firstShot = true;
 
     @Override
     public void init() {
@@ -28,7 +45,12 @@ public class Nine_ball_blue_far extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(72, 8, Math.toRadians(90)));
 
-        paths = new Paths(follower); // Build paths
+        paths = new Paths(follower);
+        initializeHardware();
+
+        // Start shooter spinning in init
+        shooterLeft.setPower(0.66);
+        shooterRight.setPower(0.66);
 
         panelsTelemetry.debug("Status", "Initialized");
         panelsTelemetry.update(telemetry);
@@ -36,10 +58,9 @@ public class Nine_ball_blue_far extends OpMode {
 
     @Override
     public void loop() {
-        follower.update(); // Update Pedro Pathing
-        pathState = autonomousPathUpdate(); // Update autonomous state machine
+        follower.update();
+        autonomousPathUpdate();
 
-        // Log values to Panels and Driver Station
         panelsTelemetry.debug("Path State", pathState);
         panelsTelemetry.debug("X", follower.getPose().getX());
         panelsTelemetry.debug("Y", follower.getPose().getY());
@@ -47,113 +68,280 @@ public class Nine_ball_blue_far extends OpMode {
         panelsTelemetry.update(telemetry);
     }
 
-    public static class Paths {
+    private void initializeHardware() {
+        shooterRight = hardwareMap.get(DcMotorEx.class, "shooterRight");
+        shooterLeft = hardwareMap.get(DcMotorEx.class, "shooterLeft");
+        intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
+        stop = hardwareMap.get(Servo.class, "stop");
 
-        public PathChain Path1;
-        public PathChain Path2;
-        public PathChain Path3;
-        public PathChain Path4;
-        public PathChain Path5;
-        public PathChain Path6;
-        public PathChain Path7;
-        public PathChain Path8;
-        public PathChain Path9;
+        shooterLeft.setDirection(DcMotor.Direction.FORWARD);
+        shooterRight.setDirection(DcMotor.Direction.REVERSE);
+
+        shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        shooterRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // Initialize servo closed
+        stop.setPosition(0.9);
+    }
+
+    private boolean updateShooter() {
+        if (shooterSpinningUp) {
+            double elapsed = shooterTimer.milliseconds();
+
+            // Only wait for spin-up on first shot
+            if (elapsed >= 6000) {
+                shooterSpinningUp = false;
+                shooterPulsing = true;
+                shooterPulseCount = 0;
+                shooterTimer.reset();
+                intakeWheels.setPower(-1.0);
+            }
+            return false;
+        }
+
+        if (shooterPulsing) {
+            double elapsed = shooterTimer.milliseconds();
+
+            if (elapsed < 500) {
+                intakeWheels.setPower(-0.8);
+            } else if (elapsed < 2200) {
+                intakeWheels.setPower(0);
+            } else {
+                shooterPulseCount++;
+                shooterTimer.reset();
+
+                if (shooterPulseCount >= 5) {
+                    shooterPulsing = false;
+                    intakeWheels.setPower(0);
+                    stop.setPosition(0.9); // Close servo
+                    return true;
+                } else {
+                    intakeWheels.setPower(-1.0);
+                }
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    private void startShooting() {
+        stop.setPosition(0); // Open servo
+
+        if (firstShot) {
+            shooterSpinningUp = true;
+            shooterPulsing = false;
+            firstShot = false;
+        } else {
+            // Skip spin-up for subsequent shots
+            shooterSpinningUp = false;
+            shooterPulsing = true;
+            shooterPulseCount = 0;
+            intakeWheels.setPower(-1.0);
+        }
+
+        shooterTimer.reset();
+    }
+
+    public static class Paths {
+        public PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9;
 
         public Paths(Follower follower) {
             Path1 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(64.662, 0.851), new Pose(61.046, 17.016))
-                    )
+                    .addPath(new BezierLine(new Pose(64.662, 0.851), new Pose(61.046, 17.016)))
                     .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(110))
                     .build();
 
             Path2 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(61.046, 17.016),
-                                    new Pose(50.411, 23.397),
-                                    new Pose(46.157, 30.629)
-                            )
-                    )
+                    .addPath(new BezierCurve(
+                            new Pose(61.046, 17.016),
+                            new Pose(50.411, 23.397),
+                            new Pose(46.157, 30.629)
+                    ))
                     .setLinearHeadingInterpolation(Math.toRadians(110), Math.toRadians(180))
                     .build();
 
             Path3 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(46.157, 30.629), new Pose(10.635, 30.629))
-                    )
+                    .addPath(new BezierLine(new Pose(46.157, 30.629), new Pose(10.635, 30.629)))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .build();
 
             Path4 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(10.635, 30.629), new Pose(46.157, 29.991))
-                    )
+                    .addPath(new BezierLine(new Pose(10.635, 30.629), new Pose(46.157, 29.991)))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .build();
 
             Path5 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(46.157, 29.991),
-                                    new Pose(50.198, 23.185),
-                                    new Pose(61.046, 17.229)
-                            )
-                    )
+                    .addPath(new BezierCurve(
+                            new Pose(46.157, 29.991),
+                            new Pose(50.198, 23.185),
+                            new Pose(61.046, 17.229)
+                    ))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(110))
                     .build();
 
             Path6 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(61.046, 17.229),
-                                    new Pose(69.979, 55.090),
-                                    new Pose(48.071, 55.941)
-                            )
-                    )
+                    .addPath(new BezierCurve(
+                            new Pose(61.046, 17.229),
+                            new Pose(69.979, 55.090),
+                            new Pose(48.071, 55.941)
+                    ))
                     .setLinearHeadingInterpolation(Math.toRadians(110), Math.toRadians(180))
                     .build();
 
             Path7 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(48.071, 55.941), new Pose(12.337, 56.154))
-                    )
+                    .addPath(new BezierLine(new Pose(48.071, 55.941), new Pose(12.337, 56.154)))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .build();
 
             Path8 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(12.337, 56.154), new Pose(48.071, 55.516))
-                    )
+                    .addPath(new BezierLine(new Pose(12.337, 56.154), new Pose(48.071, 55.516)))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
                     .build();
 
             Path9 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(48.071, 55.516),
-                                    new Pose(69.979, 54.877),
-                                    new Pose(61.258, 16.378)
-                            )
-                    )
+                    .addPath(new BezierCurve(
+                            new Pose(48.071, 55.516),
+                            new Pose(69.979, 54.877),
+                            new Pose(61.258, 16.378)
+                    ))
                     .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(110))
                     .build();
         }
     }
 
-    public int autonomousPathUpdate() {
-        // Add your state machine Here
-        // Access paths with paths.pathName
-        // Refer to the Pedro Pathing Docs (Auto Example) for an example state machine
-        return pathState;
+    public void autonomousPathUpdate() {
+        switch (pathState) {
+            case 0:
+                follower.followPath(paths.Path1);
+                pathState = 1;
+                break;
+
+            case 1:
+                if (!follower.isBusy()) {
+                    startShooting();
+                    pathState = 2;
+                }
+                break;
+
+            case 2:
+                if (updateShooter()) {
+                    pathState = 3;
+                }
+                break;
+
+            case 3:
+                follower.followPath(paths.Path2);
+                pathState = 4;
+                break;
+
+            case 4:
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(-1.0);
+                    follower.followPath(paths.Path3, false);
+                    pathState = 5;
+                }
+                break;
+
+            case 5:
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
+                    pathState = 6;
+                }
+                break;
+
+            case 6:
+                follower.followPath(paths.Path4);
+                pathState = 7;
+                break;
+
+            case 7:
+                if (!follower.isBusy()) {
+                    pathState = 8;
+                }
+                break;
+
+            case 8:
+                follower.followPath(paths.Path5);
+                pathState = 9;
+                break;
+
+            case 9:
+                if (!follower.isBusy()) {
+                    startShooting();
+                    pathState = 10;
+                }
+                break;
+
+            case 10:
+                if (updateShooter()) {
+                    pathState = 11;
+                }
+                break;
+
+            case 11:
+                follower.followPath(paths.Path6);
+                pathState = 12;
+                break;
+
+            case 12:
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(-1.0);
+                    follower.followPath(paths.Path7, false);
+                    pathState = 13;
+                }
+                break;
+
+            case 13:
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
+                    pathState = 14;
+                }
+                break;
+
+            case 14:
+                follower.followPath(paths.Path8);
+                pathState = 15;
+                break;
+
+            case 15:
+                if (!follower.isBusy()) {
+                    pathState = 16;
+                }
+                break;
+
+            case 16:
+                follower.followPath(paths.Path9);
+                pathState = 17;
+                break;
+
+            case 17:
+                if (!follower.isBusy()) {
+                    startShooting();
+                    pathState = 18;
+                }
+                break;
+
+            case 18:
+                if (updateShooter()) {
+                    pathState = 19;
+                }
+                break;
+
+            case 19:
+                telemetry.addData("State", "✓ COMPLETE ✓");
+                break;
+        }
     }
 }
