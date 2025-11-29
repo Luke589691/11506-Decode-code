@@ -27,7 +27,7 @@ public class TacoNats extends LinearOpMode {
     private static final double POWER_ADJUST_SMALL = 0.01;  // D-pad Left/Right adjustment
 
     // SERVO TOGGLE POSITIONS
-    private static final double SERVO_POSITION_LOW = 0.1;
+    private static final double SERVO_POSITION_LOW = 0.5;
     private static final double SERVO_POSITION_HIGH = 0.9;
 
     // RAPID SHOOT TIMING (milliseconds)

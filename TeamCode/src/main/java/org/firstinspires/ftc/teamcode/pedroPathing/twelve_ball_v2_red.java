@@ -90,7 +90,7 @@ public class twelve_ball_v2_red extends OpMode {
         shooterLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Initialize servo closed
-        stop.setPosition(0.9);
+        stop.setPosition(0.5);
     }
 
     private boolean updateShooter() {
@@ -123,7 +123,7 @@ public class twelve_ball_v2_red extends OpMode {
                 if (shooterPulseCount >= 3) {  // V2 Standard: 3 pulses
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
-                    stop.setPosition(0.9); // Close servo
+                    stop.setPosition(0.5); // Close servo
                     return true;
                 } else {
                     intakeWheels.setPower(-1.0);
@@ -136,7 +136,7 @@ public class twelve_ball_v2_red extends OpMode {
     }
 
     private void startShooting() {
-        stop.setPosition(0); // Open servo
+        stop.setPosition(0.9); // Open servo
 
         if (isFirstShot) {
             // First shot: do spin-up
