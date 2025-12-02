@@ -37,6 +37,10 @@ public class twelve_ball_v2_red extends OpMode {
     private boolean shooterPulsing = false;
     private boolean isFirstShot = true;
 
+    // Track when intake started for half-line timing
+    private ElapsedTime intakeTimer = new ElapsedTime();
+    private boolean intakeHalfLineDone = false;
+
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -111,11 +115,11 @@ public class twelve_ball_v2_red extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            // V2 Standard: 400ms on, 1800ms wait
+            // V2 Modified: 400ms on, 2000ms wait
             if (elapsed < 400) {
-                intakeWheels.setPower(-0.8);
-            } else if (elapsed < 2200) {  // 400 + 1800
-                intakeWheels.setPower(0);
+                intakeWheels.setPower(-0.8);   // Shooter pulse active
+            } else if (elapsed < 2400) {       // 400 + 2000
+                intakeWheels.setPower(-0.8);   // Intake wheels keep running for 2s
             } else {
                 shooterPulseCount++;
                 shooterTimer.reset();
@@ -123,7 +127,7 @@ public class twelve_ball_v2_red extends OpMode {
                 if (shooterPulseCount >= 3) {  // V2 Standard: 3 pulses
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
-                    stop.setPosition(0.5); // Close servo
+                    stop.setPosition(0.5);     // Close servo
                     return true;
                 } else {
                     intakeWheels.setPower(-1.0);
@@ -288,13 +292,20 @@ public class twelve_ball_v2_red extends OpMode {
                     intakeWheels.setPower(-1.0);
                     follower.setMaxPower(0.50);
                     follower.followPath(paths.Path3, false);
+                    intakeTimer.reset();
+                    intakeHalfLineDone = false;
                     pathState = 5;
                 }
                 break;
 
             case 5:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the line
+                if (!intakeHalfLineDone && !follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy() && intakeHalfLineDone) {
                     follower.setMaxPower(1.0);
                     pathState = 6;
                 }
@@ -304,13 +315,29 @@ public class twelve_ball_v2_red extends OpMode {
                 intakeWheels.setPower(-1.0);
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
+                intakeTimer.reset();
+                intakeHalfLineDone = false;
                 pathState = 7;
                 break;
 
             case 7:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the curve
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
+                    intakeWheels.setPower(0);
+                    intakeTimer.reset();
+                    pathState = 71; // Pause state
+                }
+                break;
+
+            case 71:
+                // 1 second pause before shooting
+                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 8;
                 }
@@ -332,13 +359,20 @@ public class twelve_ball_v2_red extends OpMode {
                     intakeWheels.setPower(-1.0);
                     follower.setMaxPower(0.50);
                     follower.followPath(paths.Path6, false);
+                    intakeTimer.reset();
+                    intakeHalfLineDone = false;
                     pathState = 11;
                 }
                 break;
 
             case 11:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the line
+                if (!intakeHalfLineDone && !follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy() && intakeHalfLineDone) {
                     follower.setMaxPower(1.0);
                     pathState = 12;
                 }
@@ -348,13 +382,29 @@ public class twelve_ball_v2_red extends OpMode {
                 intakeWheels.setPower(-1.0);
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path7);
+                intakeTimer.reset();
+                intakeHalfLineDone = false;
                 pathState = 13;
                 break;
 
             case 13:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the curve
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
+                    intakeWheels.setPower(0);
+                    intakeTimer.reset();
+                    pathState = 131; // Pause state
+                }
+                break;
+
+            case 131:
+                // 1 second pause before shooting
+                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 14;
                 }
@@ -376,13 +426,20 @@ public class twelve_ball_v2_red extends OpMode {
                     intakeWheels.setPower(-1.0);
                     follower.setMaxPower(0.50);
                     follower.followPath(paths.Path9, false);
+                    intakeTimer.reset();
+                    intakeHalfLineDone = false;
                     pathState = 17;
                 }
                 break;
 
             case 17:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the line
+                if (!intakeHalfLineDone && !follower.isBusy()) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy() && intakeHalfLineDone) {
                     follower.setMaxPower(1.0);
                     pathState = 18;
                 }
@@ -392,13 +449,29 @@ public class twelve_ball_v2_red extends OpMode {
                 intakeWheels.setPower(-1.0);
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path10);
+                intakeTimer.reset();
+                intakeHalfLineDone = false;
                 pathState = 19;
                 break;
 
             case 19:
-                if (!follower.isBusy()) {
+                // Stop intake halfway through the curve
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
+                    intakeHalfLineDone = true;
+                }
+
+                if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
+                    intakeWheels.setPower(0);
+                    intakeTimer.reset();
+                    pathState = 191; // Pause state
+                }
+                break;
+
+            case 191:
+                // 1 second pause before shooting
+                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 20;
                 }
