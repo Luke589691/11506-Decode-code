@@ -101,8 +101,8 @@ public class twelve_ball_v2_red extends OpMode {
         if (shooterSpinningUp) {
             double elapsed = shooterTimer.milliseconds();
 
-            // Only spin up on first shot
-            if (elapsed >= 5000) {
+            // Reduced spin up time to 1 second
+            if (elapsed >= 1000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterPulseCount = 0;
@@ -115,16 +115,18 @@ public class twelve_ball_v2_red extends OpMode {
         if (shooterPulsing) {
             double elapsed = shooterTimer.milliseconds();
 
-            // V2 Modified: 400ms on, 2000ms wait
+            // V2 Standard: 400ms on, 1800ms wait, then 2s intake spin
             if (elapsed < 400) {
                 intakeWheels.setPower(-0.8);   // Shooter pulse active
-            } else if (elapsed < 2400) {       // 400 + 2000
-                intakeWheels.setPower(-0.8);   // Intake wheels keep running for 2s
+            } else if (elapsed < 2200) {       // 400 + 1800
+                intakeWheels.setPower(0);      // Wait period
+            } else if (elapsed < 4200) {       // 2200 + 2000
+                intakeWheels.setPower(-0.8);   // 2-second intake spin
             } else {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 3) {  // V2 Standard: 3 pulses
+                if (shooterPulseCount >= 2) {  // Reduced to 2 pulses
                     shooterPulsing = false;
                     intakeWheels.setPower(0);
                     stop.setPosition(0.5);     // Close servo
@@ -329,15 +331,6 @@ public class twelve_ball_v2_red extends OpMode {
 
                 if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
-                    intakeWheels.setPower(0);
-                    intakeTimer.reset();
-                    pathState = 71; // Pause state
-                }
-                break;
-
-            case 71:
-                // 1 second pause before shooting
-                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 8;
                 }
@@ -396,15 +389,6 @@ public class twelve_ball_v2_red extends OpMode {
 
                 if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
-                    intakeWheels.setPower(0);
-                    intakeTimer.reset();
-                    pathState = 131; // Pause state
-                }
-                break;
-
-            case 131:
-                // 1 second pause before shooting
-                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 14;
                 }
@@ -463,15 +447,6 @@ public class twelve_ball_v2_red extends OpMode {
 
                 if (!follower.isBusy()) {
                     follower.setMaxPower(1.0);
-                    intakeWheels.setPower(0);
-                    intakeTimer.reset();
-                    pathState = 191; // Pause state
-                }
-                break;
-
-            case 191:
-                // 1 second pause before shooting
-                if (intakeTimer.milliseconds() >= 1000) {
                     startShooting();
                     pathState = 20;
                 }
