@@ -103,7 +103,7 @@ public class NineBall_Nats_Red extends OpMode {
         double elapsed = shooterTimer.milliseconds();
 
         if (shooterSpinningUp) {
-            if (elapsed >= 2000) {  // Reduced from 4000ms to 2000ms
+            if (elapsed >= 3000) {  // Reduced from 4000ms to 2000ms
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterTimer.reset();
