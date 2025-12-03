@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.pedroPathing;
+package org.firstinspires.ftc.teamcode.pedroPathing.Nats;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -14,15 +14,17 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Twelve Ball Red V2", group = "Autonomous")
+import org.firstinspires.ftc.teamcode.pedroPathing.Other.Constants;
+
+@Autonomous(name = "Six Ball Nats Red", group = "Autonomous")
 @Configurable
-public class twelve_ball_v2_red extends OpMode {
+public class SixBall_Nats_Red extends OpMode {
     private TelemetryManager panelsTelemetry;
     public Follower follower;
     private int pathState = 0;
     private Paths paths;
+    private boolean hasStarted = false;
 
     // Hardware
     public DcMotorEx intakeWheels = null;
@@ -53,18 +55,28 @@ public class twelve_ball_v2_red extends OpMode {
 
         initializeHardware();
 
-        // Start shooter spinning in init
-        shooterLeft.setPower(0.55);
-        shooterRight.setPower(0.55);
+        // Do NOT start shooter spinning in init - nothing can move
 
-        panelsTelemetry.debug("Status", "Initialized");
+        panelsTelemetry.debug("Status", "Initialized - Waiting for Start");
         panelsTelemetry.update(telemetry);
+    }
+
+    @Override
+    public void start() {
+        hasStarted = true;
+        // Start shooter spinning when start is pressed
+        shooterLeft.setPower(0.53);
+        shooterRight.setPower(0.53);
     }
 
     @Override
     public void loop() {
         follower.update();
-        autonomousPathUpdate();
+
+        // Only run autonomous path updates after start has been pressed
+        if (hasStarted) {
+            autonomousPathUpdate();
+        }
 
         panelsTelemetry.debug("Path State", pathState);
         panelsTelemetry.debug("Follower Busy", follower.isBusy());
@@ -100,25 +112,47 @@ public class twelve_ball_v2_red extends OpMode {
         stop.setPosition(0.5);
     }
     private boolean updateShooter() {
-        double elapsed = shooterTimer.milliseconds();
-
         if (shooterSpinningUp) {
-            if (elapsed >= 2000) {  // Reduced from 4000ms to 2000ms
+            double elapsed = shooterTimer.milliseconds();
+
+            if (elapsed >= 4000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
+                shooterPulseCount = 0;
                 shooterTimer.reset();
             }
             return false;
         }
 
         if (shooterPulsing) {
-            // 4 shots: 800ms intake + 400ms wait each = 4800ms total
-            int cycle = (int)(elapsed / 1200);  // Each cycle is 1200ms (800 + 400)
-            int phaseTime = (int)(elapsed % 1200);
+            double elapsed = shooterTimer.milliseconds();
 
-            if (cycle < 4) {
-                intakeWheels.setPower(phaseTime < 800 ? -0.8 : 0);
+            // Each pulse cycle: 1000ms shooting, 1500ms wait between shots
+            // Total: 4 shots = (1000 shoot + 1500 wait) x 3 + 1000 final shoot = 8500ms
+
+            if (elapsed < 1000) {
+                // Shot 1
+                intakeWheels.setPower(-0.8);
+            } else if (elapsed < 2500) {
+                // Wait after shot 1
+                intakeWheels.setPower(0);
+            } else if (elapsed < 3500) {
+                // Shot 2
+                intakeWheels.setPower(-0.8);
+            } else if (elapsed < 5000) {
+                // Wait after shot 2
+                intakeWheels.setPower(0);
+            } else if (elapsed < 6000) {
+                // Shot 3
+                intakeWheels.setPower(-0.8);
+            } else if (elapsed < 7500) {
+                // Wait after shot 3
+                intakeWheels.setPower(0);
+            } else if (elapsed < 8500) {
+                // Shot 4
+                intakeWheels.setPower(-0.8);
             } else {
+                // All 4 shots done
                 shooterPulsing = false;
                 intakeWheels.setPower(0);
                 stop.setPosition(0.5);
@@ -283,7 +317,7 @@ public class twelve_ball_v2_red extends OpMode {
             case 4:
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.60);  // Increased from 0.50
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path3, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -306,7 +340,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 6:
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.90);  // Increased from 0.80
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -315,7 +349,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 7:
                 // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {  // Reduced from 500ms
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }
@@ -341,7 +375,7 @@ public class twelve_ball_v2_red extends OpMode {
             case 10:
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.60);  // Increased from 0.50
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path6, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -364,7 +398,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 12:
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.90);  // Increased from 0.80
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path7);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -373,7 +407,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 13:
                 // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {  // Reduced from 500ms
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }
@@ -399,7 +433,7 @@ public class twelve_ball_v2_red extends OpMode {
             case 16:
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.60);  // Increased from 0.50
+                    follower.setMaxPower(0.50);
                     follower.followPath(paths.Path9, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -422,7 +456,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 18:
                 intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.90);  // Increased from 0.80
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path10);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -431,7 +465,7 @@ public class twelve_ball_v2_red extends OpMode {
 
             case 19:
                 // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {  // Reduced from 500ms
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }

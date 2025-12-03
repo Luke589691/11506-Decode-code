@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.pedroPathing;
+package org.firstinspires.ftc.teamcode.pedroPathing.Nats;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -14,11 +14,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.Other.Constants;
 
-@Autonomous(name = "Twelve Ball Blue V2", group = "Autonomous")
+@Autonomous(name = "Nine Ball Nats Red", group = "Autonomous")
 @Configurable
-public class    twelve_ball_v2_blue extends OpMode {
+public class NineBall_Nats_Red extends OpMode {
     private TelemetryManager panelsTelemetry;
     public Follower follower;
     private int pathState = 0;
@@ -41,12 +41,15 @@ public class    twelve_ball_v2_blue extends OpMode {
     private ElapsedTime intakeTimer = new ElapsedTime();
     private boolean intakeHalfLineDone = false;
 
+    // Configurable shooting heading (in degrees)
+    private double shootingHeadingDegrees = 26.0;
+
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(24.464, 129.411, Math.toRadians(144)));
-        paths = new Paths(follower);
+        follower.setStartingPose(new Pose(119.536, 129.411, Math.toRadians(36)));
+        paths = new Paths(follower, shootingHeadingDegrees);
 
         initializeHardware();
 
@@ -96,44 +99,30 @@ public class    twelve_ball_v2_blue extends OpMode {
         // Initialize servo closed
         stop.setPosition(0.5);
     }
-
     private boolean updateShooter() {
-        if (shooterSpinningUp) {
-            double elapsed = shooterTimer.milliseconds();
+        double elapsed = shooterTimer.milliseconds();
 
-            // Reduced spin up time to 1 second
-            if (elapsed >= 1000) {
+        if (shooterSpinningUp) {
+            if (elapsed >= 2000) {  // Reduced from 4000ms to 2000ms
                 shooterSpinningUp = false;
                 shooterPulsing = true;
-                shooterPulseCount = 0;
                 shooterTimer.reset();
-                intakeWheels.setPower(-1.0);
             }
             return false;
         }
 
         if (shooterPulsing) {
-            double elapsed = shooterTimer.milliseconds();
+            // 4 shots: 800ms intake + 400ms wait each = 4800ms total
+            int cycle = (int)(elapsed / 1200);  // Each cycle is 1200ms (800 + 400)
+            int phaseTime = (int)(elapsed % 1200);
 
-            // V2 Standard: 400ms on, 1800ms wait, then 2s intake spin
-            if (elapsed < 400) {
-                intakeWheels.setPower(-0.8);   // Shooter pulse active
-            } else if (elapsed < 2200) {       // 400 + 1800
-                intakeWheels.setPower(0);      // Wait period
-            } else if (elapsed < 4200) {       // 2200 + 2000
-                intakeWheels.setPower(-0.8);   // 2-second intake spin
+            if (cycle < 4) {
+                intakeWheels.setPower(phaseTime < 800 ? -0.8 : 0);
             } else {
-                shooterPulseCount++;
-                shooterTimer.reset();
-
-                if (shooterPulseCount >= 2) {  // Reduced to 2 pulses
-                    shooterPulsing = false;
-                    intakeWheels.setPower(0);
-                    stop.setPosition(0.5);     // Close servo
-                    return true;
-                } else {
-                    intakeWheels.setPower(-1.0);
-                }
+                shooterPulsing = false;
+                intakeWheels.setPower(0);
+                stop.setPosition(0.5);
+                return true;
             }
             return false;
         }
@@ -164,109 +153,104 @@ public class    twelve_ball_v2_blue extends OpMode {
         shooterTimer.reset();
     }
 
-    private double mirrorX(double x) {
-        return 144 - x;
-    }
-
     public static class Paths {
         public PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9, Path10;
 
-        public Paths(Follower follower) {
-            // Mirror X coordinates: 144 - original_X
-            // Mirror headings: 180 - original_heading
-            
+        public Paths(Follower follower, double shootingHeadingDegrees) {
+            double shootingHeadingRad = Math.toRadians(shootingHeadingDegrees);
+
             Path1 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(24.464, 129.411),
-                            new Pose(56.110, 105.397)
+                            new Pose(119.536, 129.411),
+                            new Pose(87.890, 105.397)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(144), Math.toRadians(145))
+                    .setLinearHeadingInterpolation(Math.toRadians(36), shootingHeadingRad)
                     .build();
 
             Path2 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(56.110, 105.397),
-                            new Pose(56.334, 84.299)
+                            new Pose(87.890, 105.397),
+                            new Pose(87.666, 84.299)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
 
             Path3 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(56.334, 84.299),
-                            new Pose(15.262, 84.075)
+                            new Pose(87.666, 84.299),
+                            new Pose(128.738, 84.075)
                     ))
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
 
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(15.262, 84.075),
-                            new Pose(57.000, 74.000),
-                            new Pose(56.110, 106.070)
+                            new Pose(128.738, 84.075),
+                            new Pose(87.000, 74.000),
+                            new Pose(87.890, 106.070)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(145))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), shootingHeadingRad)
                     .build();
 
             Path5 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(56.110, 106.070),
-                            new Pose(55.436, 59.611)
+                            new Pose(87.890, 106.070),
+                            new Pose(88.564, 59.611)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
 
             Path6 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(55.436, 59.611),
-                            new Pose(10.100, 60.060)
+                            new Pose(88.564, 59.611),
+                            new Pose(133.900, 60.060)
                     ))
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
 
             Path7 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(10.100, 60.060),
-                            new Pose(69.000, 51.000),
-                            new Pose(55.885, 106.070)
+                            new Pose(133.900, 60.060),
+                            new Pose(75.000, 51.000),
+                            new Pose(88.115, 106.070)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(145))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), shootingHeadingRad)
                     .build();
 
             Path8 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(55.885, 106.070),
-                            new Pose(55.436, 36.269)
+                            new Pose(88.115, 106.070),
+                            new Pose(88.564, 36.269)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(180))
+                    .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
 
             Path9 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(55.436, 36.269),
-                            new Pose(10.773, 35.596)
+                            new Pose(88.564, 36.269),
+                            new Pose(133.227, 35.596)
                     ))
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
+                    .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
 
             Path10 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(10.773, 35.596),
-                            new Pose(63.000, 78.000),
-                            new Pose(76.000, 36.000),
-                            new Pose(55.885, 105.845)
+                            new Pose(133.227, 35.596),
+                            new Pose(81.000, 78.000),
+                            new Pose(68.000, 36.000),
+                            new Pose(88.115, 105.845)
                     ))
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(145))
+                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(35))
                     .build();
         }
     }
@@ -293,13 +277,13 @@ public class    twelve_ball_v2_blue extends OpMode {
 
             case 3:
                 follower.followPath(paths.Path2);
+                intakeWheels.setPower(-1.0);  // Spin intake while driving
                 pathState = 4;
                 break;
 
             case 4:
                 if (!follower.isBusy()) {
-                    intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.50);
+                    follower.setMaxPower(0.40);  // Slow down while intaking
                     follower.followPath(paths.Path3, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -321,8 +305,7 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 6:
-                intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.80);
+                follower.setMaxPower(1.0);  // Full speed while driving
                 follower.followPath(paths.Path4);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -330,8 +313,8 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 7:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
+                // Stop intake before reaching shooting position
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }
@@ -351,13 +334,13 @@ public class    twelve_ball_v2_blue extends OpMode {
 
             case 9:
                 follower.followPath(paths.Path5);
+                intakeWheels.setPower(-1.0);  // Spin intake while driving
                 pathState = 10;
                 break;
 
             case 10:
                 if (!follower.isBusy()) {
-                    intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.50);
+                    follower.setMaxPower(0.40);  // Slow down while intaking
                     follower.followPath(paths.Path6, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -379,8 +362,7 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 12:
-                intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.80);
+                follower.setMaxPower(1.0);  // Full speed while driving
                 follower.followPath(paths.Path7);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -388,8 +370,8 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 13:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
+                // Stop intake before reaching shooting position
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }
@@ -409,13 +391,13 @@ public class    twelve_ball_v2_blue extends OpMode {
 
             case 15:
                 follower.followPath(paths.Path8);
+                intakeWheels.setPower(-1.0);  // Spin intake while driving
                 pathState = 16;
                 break;
 
             case 16:
                 if (!follower.isBusy()) {
-                    intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.50);
+                    follower.setMaxPower(0.40);  // Slow down while intaking
                     follower.followPath(paths.Path9, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -437,8 +419,7 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 18:
-                intakeWheels.setPower(-1.0);
-                follower.setMaxPower(0.80);
+                follower.setMaxPower(1.0);  // Full speed while driving
                 follower.followPath(paths.Path10);
                 intakeTimer.reset();
                 intakeHalfLineDone = false;
@@ -446,8 +427,8 @@ public class    twelve_ball_v2_blue extends OpMode {
                 break;
 
             case 19:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
+                // Stop intake before reaching shooting position
+                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
                     intakeWheels.setPower(0);
                     intakeHalfLineDone = true;
                 }

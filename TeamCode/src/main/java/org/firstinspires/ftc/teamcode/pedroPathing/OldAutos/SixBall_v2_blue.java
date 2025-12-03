@@ -1,25 +1,22 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.pedroPathing.OldAutos;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.Other.Constants;
 
-@Autonomous(name = "Six Ball Red Far", group = "Autonomous")
+//@Autonomous(name = "Six Ball Blue V2", group = "Autonomous")
 @Configurable
-public class Six_ball_Red_far extends OpMode {
-
+public class SixBall_v2_blue extends OpMode {
     private TelemetryManager panelsTelemetry;
     public Follower follower;
     private int pathState = 0;
@@ -31,29 +28,26 @@ public class Six_ball_Red_far extends OpMode {
     public DcMotorEx shooterRight = null;
     public Servo stop = null;
 
-    // Non-blocking timers
+    // Timers for non-blocking actions
     private ElapsedTime shooterTimer = new ElapsedTime();
     private int shooterPulseCount = 0;
     private boolean shooterPulsing = false;
     private boolean isFirstShot = true;
-    private int shootCount = 0;
 
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
-
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72, 136, Math.toRadians(270)));
-
+        follower.setStartingPose(new Pose(22.654, 124.262, Math.toRadians(145)));
         paths = new Paths(follower);
+
         initializeIntakeShooter();
 
         // Start shooter immediately
-        shooterLeft.setPower(0.66);
-        shooterRight.setPower(0.66);
+        shooterLeft.setPower(0.55);
+        shooterRight.setPower(0.55);
 
         panelsTelemetry.debug("Status", "Initialized");
-        panelsTelemetry.debug("Alliance", "RED FAR");
         panelsTelemetry.update(telemetry);
     }
 
@@ -67,7 +61,6 @@ public class Six_ball_Red_far extends OpMode {
         panelsTelemetry.debug("X", follower.getPose().getX());
         panelsTelemetry.debug("Y", follower.getPose().getY());
         panelsTelemetry.debug("Heading", Math.toDegrees(follower.getPose().getHeading()));
-        panelsTelemetry.debug("Shot Count", shootCount);
         panelsTelemetry.update(telemetry);
 
         telemetry.addData("Path State", pathState);
@@ -76,7 +69,6 @@ public class Six_ball_Red_far extends OpMode {
                 follower.getPose().getX(),
                 follower.getPose().getY(),
                 Math.toDegrees(follower.getPose().getHeading()));
-        telemetry.addData("Shots", shootCount);
         telemetry.update();
     }
 
@@ -86,7 +78,7 @@ public class Six_ball_Red_far extends OpMode {
         intakeWheels = hardwareMap.get(DcMotorEx.class, "intakeWheels");
         stop = hardwareMap.get(Servo.class, "stop");
 
-        shooterLeft.setDirection(DcMotor.Direction.REVERSE);
+        shooterLeft.setDirection(DcMotor.Direction.FORWARD);
         shooterRight.setDirection(DcMotor.Direction.REVERSE);
 
         shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -101,8 +93,8 @@ public class Six_ball_Red_far extends OpMode {
         double elapsed = shooterTimer.milliseconds();
 
         // First shot only: wait for spin up
-        if (isFirstShot && elapsed < 6000) {
-            // For shots after first: reverse intake for first 100ms during wait
+        if (isFirstShot && elapsed < 5000) {
+            // For subsequent shots: reverse intake for first 100ms
             if (!isFirstShot && elapsed < 100) {
                 intakeWheels.setPower(1.0);
             } else if (!isFirstShot && elapsed >= 100) {
@@ -121,45 +113,32 @@ public class Six_ball_Red_far extends OpMode {
         }
 
         if (shooterPulsing) {
-            if (elapsed < 500) {
-                // Pulse phase
+            if (elapsed < 400) {
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 2200) {
-                // Wait phase
                 intakeWheels.setPower(0);
             } else {
                 shooterPulseCount++;
                 shooterTimer.reset();
 
-                if (shooterPulseCount >= 2) {
-                    // After 2 pulses, switch to 3 seconds full power
+                if (shooterPulseCount >= 3) {
                     shooterPulsing = false;
-                    intakeWheels.setPower(-1.0);
-                    shooterTimer.reset();
+                    intakeWheels.setPower(0);
+                    stop.setPosition(0.9); // Close stopper
+                    return true;
                 } else {
-                    // Continue pulsing
                     intakeWheels.setPower(-1.0);
                 }
             }
             return false;
         }
 
-        // Full power phase after pulsing
-        if (elapsed >= 3000) {
-            // Done with shooting sequence
-            intakeWheels.setPower(0);
-            stop.setPosition(0.9); // Close stopper
-            shooterPulseCount = 0;
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     private void startShooting() {
         shooterPulsing = false;
         shooterTimer.reset();
-        shootCount++;
 
         if (isFirstShot) {
             isFirstShot = false;
@@ -167,64 +146,46 @@ public class Six_ball_Red_far extends OpMode {
     }
 
     public static class Paths {
-        public PathChain Path1, Path2, Path3, Path4, Path5;
+        public PathChain Path1;
+        public PathChain Path2;
+        public PathChain Path3;
+        public PathChain Path4;
 
         public Paths(Follower follower) {
             Path1 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(
-                                    new Pose(64.662, 143.149),
-                                    new Pose(61.046, 126.984)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(247.5))
+                    .addPath(new BezierLine(
+                            new Pose(22.654, 124.262),
+                            new Pose(55.626, 93.757)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(145), Math.toRadians(110))
                     .build();
 
             Path2 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(61.046, 126.984),
-                                    new Pose(50.411, 120.603),
-                                    new Pose(46.157, 113.371)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(250), Math.toRadians(180))
+                    .addPath(new BezierLine(
+                            new Pose(55.626, 93.757),
+                            new Pose(55.850, 78.215)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
                     .build();
 
             Path3 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(
-                                    new Pose(46.157, 113.371),
-                                    new Pose(10.635, 113.371)
-                            )
-                    )
+                    .addPath(new BezierLine(
+                            new Pose(55.850, 78.215),
+                            new Pose(25.477, 79.112)
+                    ))
                     .setConstantHeadingInterpolation(Math.toRadians(180))
                     .build();
 
             Path4 = follower
                     .pathBuilder()
-                    .addPath(
-                            new BezierLine(
-                                    new Pose(10.635, 113.371),
-                                    new Pose(46.157, 114.009)
-                            )
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
-                    .build();
-
-            Path5 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierCurve(
-                                    new Pose(46.157, 114.009),
-                                    new Pose(50.198, 120.815),
-                                    new Pose(61.046, 126.771)
-                            )
-                    )
-                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(247.5))
+                    .addPath(new BezierLine(
+                            new Pose(25.477, 79.112),
+                            new Pose(56.075, 93.533)
+                    ))
+                    .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
                     .build();
         }
     }
@@ -232,92 +193,86 @@ public class Six_ball_Red_far extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                telemetry.addData("State", "Starting Path1 - Move to scoring");
+                telemetry.addData("State", "Starting Path1");
                 follower.followPath(paths.Path1);
                 pathState = 1;
                 break;
 
             case 1:
-                telemetry.addData("State", "Path1 - Moving");
                 if (!follower.isBusy()) {
-                    telemetry.addData("State", "Path1 complete, shooting preload");
+                    telemetry.addData("State", "Path1 complete, starting shooter");
                     startShooting();
                     pathState = 2;
                 }
                 break;
 
             case 2:
-                telemetry.addData("State", "Shooting (1st - Preload)");
+                telemetry.addData("State", "Shooting");
                 if (updateShooter()) {
+                    telemetry.addData("State", "Shooting complete");
                     pathState = 3;
                 }
                 break;
 
             case 3:
-                telemetry.addData("State", "Starting Path2 - Move to samples");
+                telemetry.addData("State", "Starting Path2");
                 follower.followPath(paths.Path2);
                 pathState = 4;
                 break;
 
             case 4:
-                telemetry.addData("State", "Path2 - Moving to samples");
                 if (!follower.isBusy()) {
-                    telemetry.addData("State", "Path2 complete, starting Path3 with intake");
-                    intakeWheels.setPower(-1.0);
-                    follower.setMaxPower(0.65);
-                    follower.followPath(paths.Path3, false);
+                    telemetry.addData("State", "Path2 complete");
                     pathState = 5;
                 }
                 break;
 
             case 5:
-                telemetry.addData("State", "Path3 - Intake ON (to observation zone)");
-                if (!follower.isBusy()) {
-                    intakeWheels.setPower(0);
-                    follower.setMaxPower(1.0);
-                    telemetry.addData("State", "Path3 complete, starting Path4");
-                    pathState = 6;
-                }
+                telemetry.addData("State", "Starting Path3 - Intake FULL");
+                intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.50);
+                follower.followPath(paths.Path3, false);
+                pathState = 6;
                 break;
 
             case 6:
-                telemetry.addData("State", "Starting Path4 - Return to samples");
+                telemetry.addData("State", "Following Path3 - Intake ON");
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
+                    telemetry.addData("State", "Path3 complete - Intake OFF");
+                    pathState = 7;
+                }
+                break;
+
+            case 7:
+                telemetry.addData("State", "Starting Path4 - Intake Full");
+                intakeWheels.setPower(-1.0);
+                follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
-                pathState = 9;
+                pathState = 8;
+                break;
+
+            case 8:
+                telemetry.addData("State", "Following Path4 - Intake ON");
+                if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
+                    follower.setMaxPower(1);
+                    telemetry.addData("State", "Path4 complete, starting shooter");
+                    startShooting();
+                    pathState = 9;
+                }
                 break;
 
             case 9:
-                telemetry.addData("State", "Path4 - Returning");
-                if (!follower.isBusy()) {
-                    telemetry.addData("State", "Path4 complete, starting Path5");
-                    follower.followPath(paths.Path5);
+                telemetry.addData("State", "Final shooting");
+                if (updateShooter()) {
+                    telemetry.addData("State", "Autonomous complete!");
                     pathState = 10;
                 }
                 break;
 
             case 10:
-                telemetry.addData("State", "Path5 - Moving to scoring");
-                if (!follower.isBusy()) {
-                    telemetry.addData("State", "Path5 complete, shooting final sample");
-                    startShooting();
-                    pathState = 11;
-                }
-                break;
-
-            case 11:
-                telemetry.addData("State", "Shooting (2nd - Final)");
-                if (updateShooter()) {
-                    pathState = 12;
-                }
-                break;
-
-            case 12:
-                telemetry.addData("State", "✓ AUTONOMOUS COMPLETE ✓");
-                telemetry.addData("Total Shots", shootCount);
-                break;
-
-            default:
-                telemetry.addData("State", "Unknown state!");
+                telemetry.addData("State", "DONE");
                 break;
         }
     }
