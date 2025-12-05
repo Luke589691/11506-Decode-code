@@ -50,7 +50,6 @@ public class SixBall_Nats_Blue extends OpMode {
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
         follower = Constants.createFollower(hardwareMap);
-        // Mirrored starting pose: Y = 144 - 129.411 = 14.589, Heading = -36°
         follower.setStartingPose(new Pose(119.536, 14.589, Math.toRadians(-36)));
         paths = new Paths(follower, shootingHeadingDegrees);
 
@@ -133,28 +132,20 @@ public class SixBall_Nats_Blue extends OpMode {
             // Total: 4 shots = (1000 shoot + 1500 wait) x 3 + 1000 final shoot = 8500ms
 
             if (elapsed < 1000) {
-                // Shot 1
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 2500) {
-                // Wait after shot 1
                 intakeWheels.setPower(0);
             } else if (elapsed < 3500) {
-                // Shot 2
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 5000) {
-                // Wait after shot 2
                 intakeWheels.setPower(0);
             } else if (elapsed < 6000) {
-                // Shot 3
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 7500) {
-                // Wait after shot 3
                 intakeWheels.setPower(0);
             } else if (elapsed < 8500) {
-                // Shot 4
                 intakeWheels.setPower(-0.8);
             } else {
-                // All 4 shots done
                 shooterPulsing = false;
                 intakeWheels.setPower(0);
                 stop.setPosition(0.5);
@@ -195,14 +186,11 @@ public class SixBall_Nats_Blue extends OpMode {
         public Paths(Follower follower, double shootingHeadingDegrees) {
             double shootingHeadingRad = Math.toRadians(shootingHeadingDegrees);
 
-            // All Y coordinates mirrored: Y_blue = 144 - Y_red
-            // All headings mirrored: H_blue = -H_red
-
             Path1 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(119.536, 14.589),  // 144 - 129.411
-                            new Pose(87.890, 38.603)    // 144 - 105.397
+                            new Pose(119.536, 14.589),
+                            new Pose(87.890, 38.603)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(-36), shootingHeadingRad)
                     .build();
@@ -210,8 +198,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path2 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.890, 38.603),   // 144 - 105.397
-                            new Pose(87.666, 59.701)    // 144 - 84.299
+                            new Pose(87.890, 38.603),
+                            new Pose(87.666, 59.701)
                     ))
                     .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
@@ -219,8 +207,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path3 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.666, 59.701),   // 144 - 84.299
-                            new Pose(128.738, 59.925)   // 144 - 84.075
+                            new Pose(87.666, 59.701),
+                            new Pose(128.738, 59.925)
                     ))
                     .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
@@ -228,9 +216,9 @@ public class SixBall_Nats_Blue extends OpMode {
             Path4 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(128.738, 59.925),  // 144 - 84.075
-                            new Pose(87.000, 70.000),   // 144 - 74.000
-                            new Pose(87.890, 37.930)    // 144 - 106.070
+                            new Pose(128.738, 59.925),
+                            new Pose(87.000, 70.000),
+                            new Pose(87.890, 37.930)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), shootingHeadingRad)
                     .build();
@@ -238,8 +226,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path5 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(87.890, 37.930),   // 144 - 106.070
-                            new Pose(88.564, 84.389)    // 144 - 59.611
+                            new Pose(87.890, 37.930),
+                            new Pose(88.564, 84.389)
                     ))
                     .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
@@ -247,8 +235,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path6 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.564, 84.389),   // 144 - 59.611
-                            new Pose(133.900, 83.940)   // 144 - 60.060
+                            new Pose(88.564, 84.389),
+                            new Pose(133.900, 83.940)
                     ))
                     .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
@@ -256,9 +244,9 @@ public class SixBall_Nats_Blue extends OpMode {
             Path7 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(133.900, 83.940),  // 144 - 60.060
-                            new Pose(75.000, 93.000),   // 144 - 51.000
-                            new Pose(88.115, 37.930)    // 144 - 106.070
+                            new Pose(133.900, 83.940),
+                            new Pose(75.000, 93.000),
+                            new Pose(88.115, 37.930)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), shootingHeadingRad)
                     .build();
@@ -266,8 +254,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path8 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.115, 37.930),   // 144 - 106.070
-                            new Pose(88.564, 107.731)   // 144 - 36.269
+                            new Pose(88.115, 37.930),
+                            new Pose(88.564, 107.731)
                     ))
                     .setLinearHeadingInterpolation(shootingHeadingRad, Math.toRadians(0))
                     .build();
@@ -275,8 +263,8 @@ public class SixBall_Nats_Blue extends OpMode {
             Path9 = follower
                     .pathBuilder()
                     .addPath(new BezierLine(
-                            new Pose(88.564, 107.731),  // 144 - 36.269
-                            new Pose(133.227, 108.404)  // 144 - 35.596
+                            new Pose(88.564, 107.731),
+                            new Pose(133.227, 108.404)
                     ))
                     .setConstantHeadingInterpolation(Math.toRadians(0))
                     .build();
@@ -284,10 +272,10 @@ public class SixBall_Nats_Blue extends OpMode {
             Path10 = follower
                     .pathBuilder()
                     .addPath(new BezierCurve(
-                            new Pose(133.227, 108.404), // 144 - 35.596
-                            new Pose(81.000, 66.000),   // 144 - 78.000
-                            new Pose(68.000, 108.000),  // 144 - 36.000
-                            new Pose(88.115, 38.155)    // 144 - 105.845
+                            new Pose(133.227, 108.404),
+                            new Pose(81.000, 66.000),
+                            new Pose(68.000, 108.000),
+                            new Pose(88.115, 38.155)
                     ))
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-35))
                     .build();
@@ -344,22 +332,16 @@ public class SixBall_Nats_Blue extends OpMode {
                 break;
 
             case 6:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 7;
                 break;
 
             case 7:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 8;
@@ -402,22 +384,16 @@ public class SixBall_Nats_Blue extends OpMode {
                 break;
 
             case 12:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path7);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 13;
                 break;
 
             case 13:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 14;
@@ -460,22 +436,16 @@ public class SixBall_Nats_Blue extends OpMode {
                 break;
 
             case 18:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path10);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 19;
                 break;
 
             case 19:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 20;

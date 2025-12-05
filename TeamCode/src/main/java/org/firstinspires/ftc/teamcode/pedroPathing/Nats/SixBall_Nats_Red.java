@@ -111,6 +111,7 @@ public class SixBall_Nats_Red extends OpMode {
         // Initialize servo closed
         stop.setPosition(0.5);
     }
+
     private boolean updateShooter() {
         if (shooterSpinningUp) {
             double elapsed = shooterTimer.milliseconds();
@@ -131,28 +132,20 @@ public class SixBall_Nats_Red extends OpMode {
             // Total: 4 shots = (1000 shoot + 1500 wait) x 3 + 1000 final shoot = 8500ms
 
             if (elapsed < 1000) {
-                // Shot 1
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 2500) {
-                // Wait after shot 1
                 intakeWheels.setPower(0);
             } else if (elapsed < 3500) {
-                // Shot 2
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 5000) {
-                // Wait after shot 2
                 intakeWheels.setPower(0);
             } else if (elapsed < 6000) {
-                // Shot 3
                 intakeWheels.setPower(-0.8);
             } else if (elapsed < 7500) {
-                // Wait after shot 3
                 intakeWheels.setPower(0);
             } else if (elapsed < 8500) {
-                // Shot 4
                 intakeWheels.setPower(-0.8);
             } else {
-                // All 4 shots done
                 shooterPulsing = false;
                 intakeWheels.setPower(0);
                 stop.setPosition(0.5);
@@ -339,22 +332,16 @@ public class SixBall_Nats_Red extends OpMode {
                 break;
 
             case 6:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path4);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 7;
                 break;
 
             case 7:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 8;
@@ -397,22 +384,16 @@ public class SixBall_Nats_Red extends OpMode {
                 break;
 
             case 12:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path7);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 13;
                 break;
 
             case 13:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 14;
@@ -455,22 +436,16 @@ public class SixBall_Nats_Red extends OpMode {
                 break;
 
             case 18:
-                intakeWheels.setPower(-1.0);
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 follower.setMaxPower(0.80);
                 follower.followPath(paths.Path10);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
                 pathState = 19;
                 break;
 
             case 19:
-                // Stop intake halfway through the curve
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 500) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 20;

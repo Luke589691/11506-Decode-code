@@ -99,11 +99,12 @@ public class NineBall_Nats_Red extends OpMode {
         // Initialize servo closed
         stop.setPosition(0.5);
     }
+
     private boolean updateShooter() {
         double elapsed = shooterTimer.milliseconds();
 
         if (shooterSpinningUp) {
-            if (elapsed >= 3000) {  // Reduced from 4000ms to 2000ms
+            if (elapsed >= 3000) {
                 shooterSpinningUp = false;
                 shooterPulsing = true;
                 shooterTimer.reset();
@@ -113,7 +114,7 @@ public class NineBall_Nats_Red extends OpMode {
 
         if (shooterPulsing) {
             // 4 shots: 800ms intake + 400ms wait each = 4800ms total
-            int cycle = (int)(elapsed / 1200);  // Each cycle is 1200ms (800 + 400)
+            int cycle = (int)(elapsed / 1200);
             int phaseTime = (int)(elapsed % 1200);
 
             if (cycle < 4) {
@@ -277,13 +278,13 @@ public class NineBall_Nats_Red extends OpMode {
 
             case 3:
                 follower.followPath(paths.Path2);
-                intakeWheels.setPower(-1.0);  // Spin intake while driving
+                intakeWheels.setPower(-1.0);
                 pathState = 4;
                 break;
 
             case 4:
                 if (!follower.isBusy()) {
-                    follower.setMaxPower(0.40);  // Slow down while intaking
+                    follower.setMaxPower(0.40);
                     follower.followPath(paths.Path3, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -305,21 +306,16 @@ public class NineBall_Nats_Red extends OpMode {
                 break;
 
             case 6:
-                follower.setMaxPower(1.0);  // Full speed while driving
+                follower.setMaxPower(1.0);
                 follower.followPath(paths.Path4);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 pathState = 7;
                 break;
 
             case 7:
-                // Stop intake before reaching shooting position
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 8;
@@ -334,13 +330,13 @@ public class NineBall_Nats_Red extends OpMode {
 
             case 9:
                 follower.followPath(paths.Path5);
-                intakeWheels.setPower(-1.0);  // Spin intake while driving
+                intakeWheels.setPower(-1.0);
                 pathState = 10;
                 break;
 
             case 10:
                 if (!follower.isBusy()) {
-                    follower.setMaxPower(0.40);  // Slow down while intaking
+                    follower.setMaxPower(0.40);
                     follower.followPath(paths.Path6, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -362,21 +358,16 @@ public class NineBall_Nats_Red extends OpMode {
                 break;
 
             case 12:
-                follower.setMaxPower(1.0);  // Full speed while driving
+                follower.setMaxPower(1.0);
                 follower.followPath(paths.Path7);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 pathState = 13;
                 break;
 
             case 13:
-                // Stop intake before reaching shooting position
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 14;
@@ -391,13 +382,13 @@ public class NineBall_Nats_Red extends OpMode {
 
             case 15:
                 follower.followPath(paths.Path8);
-                intakeWheels.setPower(-1.0);  // Spin intake while driving
+                intakeWheels.setPower(-1.0);
                 pathState = 16;
                 break;
 
             case 16:
                 if (!follower.isBusy()) {
-                    follower.setMaxPower(0.40);  // Slow down while intaking
+                    follower.setMaxPower(0.40);
                     follower.followPath(paths.Path9, false);
                     intakeTimer.reset();
                     intakeHalfLineDone = false;
@@ -419,21 +410,16 @@ public class NineBall_Nats_Red extends OpMode {
                 break;
 
             case 18:
-                follower.setMaxPower(1.0);  // Full speed while driving
+                follower.setMaxPower(1.0);
                 follower.followPath(paths.Path10);
-                intakeTimer.reset();
-                intakeHalfLineDone = false;
+                intakeWheels.setPower(-1.0);  // Keep intake running during return
                 pathState = 19;
                 break;
 
             case 19:
-                // Stop intake before reaching shooting position
-                if (!intakeHalfLineDone && intakeTimer.milliseconds() > 400) {
-                    intakeWheels.setPower(0);
-                    intakeHalfLineDone = true;
-                }
-
+                // Stop intake only when we reach shooting position
                 if (!follower.isBusy()) {
+                    intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
                     startShooting();
                     pathState = 20;
