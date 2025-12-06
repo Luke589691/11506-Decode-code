@@ -336,7 +336,7 @@ public class TacoNats extends LinearOpMode {
             telemetry.addData("Power", "%.2f", intakeWheelsPower);
             telemetry.addData("Running", intakeRunning);
             telemetry.addData("=== SERVO ===", "");
-            telemetry.addData("Toggle Servo", servoHigh ? "HIGH (0.9)" : "LOW (0.1)");
+            telemetry.addData("Toggle Servo", servoHigh ? "DOWN" : "UP");
             telemetry.update();
         }
     }
