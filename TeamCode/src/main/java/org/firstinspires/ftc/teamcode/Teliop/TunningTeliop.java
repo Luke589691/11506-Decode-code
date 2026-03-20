@@ -16,39 +16,17 @@ public class TunningTeliop {
     public static final double DEADZONE               = 0.05;
 
     // ========================================
-    // SHOOTER PID TUNING
-    // ========================================
-    // Target velocity in encoder ticks/sec (from DcMotorEx.getVelocity())
-    // Increase/decrease to change how fast the shooter spins.
-    // Typical range for a bare 6000 RPM motor: 1500–2800 ticks/sec
-    public static final double SHOOTER_TARGET_VELOCITY  = 2000.0; // ticks/sec — TUNE THIS
-
-    // Free-spin velocity of your motor at full power (used for feedforward).
-    // Run shooter at full power and read getVelocity() from telemetry to find this.
-    public static final double SHOOTER_MAX_TICKS_PER_SEC = 2800.0; // TUNE THIS
-
-    // PID gains — see ShooterPID.java for tuning guide
-    public static final double SHOOTER_kP = 0.0005; // Start here, raise until it oscillates
-    public static final double SHOOTER_kI = 0.0001; // Add slowly to fix steady-state error
-    public static final double SHOOTER_kD = 0.0;    // Usually not needed; add to reduce overshoot
-
-    // How close to target velocity counts as "at speed" (ticks/sec)
-    public static final double SHOOTER_VELOCITY_TOLERANCE = 50.0;
-
-    // ========================================
-    // SHOOTER POWERS (used in human player / fallback modes)
+    // SHOOTER POWERS
     // ========================================
     public static final double DEFAULT_SHOOTER_POWER      = 0.6;
     public static final double HUMAN_PLAYER_SHOOTER_POWER = -1.0;
     public static final double HUMAN_PLAYER_INTAKE_POWER  = 0.5;
 
     // ========================================
-    // SHOOTER TARGET VELOCITY ADJUSTMENT
+    // POWER ADJUSTMENT INCREMENTS
     // ========================================
-    public static final double VELOCITY_ADJUST_LARGE = 100.0; // Bumper step (ticks/sec)
-    public static final double VELOCITY_ADJUST_SMALL = 20.0;  // D-pad step (ticks/sec)
-    public static final double VELOCITY_MIN          = 200.0;
-    public static final double VELOCITY_MAX          = 2800.0;
+    public static final double POWER_ADJUST_LARGE = 0.05;
+    public static final double POWER_ADJUST_SMALL = 0.01;
 
     // ========================================
     // SERVO POSITIONS

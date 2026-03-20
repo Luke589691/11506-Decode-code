@@ -14,12 +14,9 @@ public class TacoNats extends LinearOpMode {
     private DcMotorEx frontLeft, frontRight, backLeft, backRight;
     private Servo tiltLeft, tiltRight, stop;
 
-    // Input handler
-    private GamepadControls controls;
-
-    // Shooter PID controllers (one per motor for independent correction)
-    private ShooterPID pidLeft;
-    private ShooterPID pidRight;
+    // Input handlers
+    private GamepadControls driveControls;   // gamepad1 — driver
+    private GamepadControls controls;        // gamepad2 — operator
 
     // Robot state
     private boolean intakeRunning   = false;
@@ -28,12 +25,12 @@ public class TacoNats extends LinearOpMode {
     private boolean servoHigh       = false;
     private boolean tiltServosUp    = false;
 
-    private int  shooterMode            = 0; // 0: Off, 1: PID
-    private int  shooterModeBeforeRapid = 0;
-    private long rapidShootStartTime    = 0;
+    private int shooterMode            = 0;
+    private int shooterModeBeforeRapid = 0;
+    private long rapidShootStartTime   = 0;
 
-    // Target velocity shared by both motors (adjusted by bumpers/dpad)
-    private double targetVelocity    = TunningTeliop.SHOOTER_TARGET_VELOCITY;
+    private double shooterLeftPower  = TunningTeliop.DEFAULT_SHOOTER_POWER;
+    private double shooterRightPower = TunningTeliop.DEFAULT_SHOOTER_POWER;
     private double intakeWheelsPower = 0.0;
 
     @Override
@@ -64,7 +61,6 @@ public class TacoNats extends LinearOpMode {
         backRight.setDirection(DcMotor.Direction.FORWARD);
 
         // --- Run modes ---
-        // Shooter uses RUN_WITHOUT_ENCODER so we control power directly (PID is manual)
         shooterLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         intakeWheels.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -85,12 +81,9 @@ public class TacoNats extends LinearOpMode {
         tiltLeft.setPosition(TunningTeliop.TILT_POSITION_DOWN);
         tiltRight.setPosition(TunningTeliop.TILT_POSITION_DOWN);
 
-        // --- PID controllers ---
-        pidLeft  = new ShooterPID(TunningTeliop.SHOOTER_kP, TunningTeliop.SHOOTER_kI, TunningTeliop.SHOOTER_kD);
-        pidRight = new ShooterPID(TunningTeliop.SHOOTER_kP, TunningTeliop.SHOOTER_kI, TunningTeliop.SHOOTER_kD);
-
         // --- Gamepad controls ---
-        controls = new GamepadControls(gamepad1);
+        driveControls = new GamepadControls(gamepad1); // Driver
+        controls      = new GamepadControls(gamepad2); // Operator
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -100,15 +93,16 @@ public class TacoNats extends LinearOpMode {
         while (opModeIsActive()) {
 
             // Refresh all gamepad inputs
+            driveControls.update();
             controls.update();
 
             // ========================================
-            // DRIVE — Robot-Centric Mecanum
+            // DRIVE — gamepad1, Robot-Centric Mecanum
             // ========================================
-            double frontLeftPower  = (controls.drive + controls.strafe + controls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
-            double frontRightPower = (controls.drive - controls.strafe - controls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
-            double backLeftPower   = (controls.drive - controls.strafe + controls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
-            double backRightPower  = (controls.drive + controls.strafe - controls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
+            double frontLeftPower  = (driveControls.drive + driveControls.strafe + driveControls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
+            double frontRightPower = (driveControls.drive - driveControls.strafe - driveControls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
+            double backLeftPower   = (driveControls.drive - driveControls.strafe + driveControls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
+            double backRightPower  = (driveControls.drive + driveControls.strafe - driveControls.turn * TunningTeliop.TURN_SPEED_MULTIPLIER) * TunningTeliop.DRIVE_SPEED_MULTIPLIER;
 
             double maxPower = Math.max(
                     Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)),
@@ -126,7 +120,7 @@ public class TacoNats extends LinearOpMode {
             backRight.setPower(backRightPower);
 
             // ========================================
-            // TILT SERVOS — Triggers
+            // TILT SERVOS — gamepad2 Triggers
             // ========================================
             if (controls.leftTriggerHeld) {
                 tiltLeft.setPosition(TunningTeliop.TILT_POSITION_DOWN);
@@ -140,35 +134,34 @@ public class TacoNats extends LinearOpMode {
             }
 
             // ========================================
-            // TARGET VELOCITY ADJUSTMENT — Bumpers & D-pad L/R
-            // Replaces old "power adjust" — now adjusts RPM target instead
+            // SHOOTER POWER ADJUSTMENT — gamepad2
             // ========================================
             if (controls.pressedLeftBumper && !humanPlayerMode) {
-                targetVelocity = Math.max(TunningTeliop.VELOCITY_MIN, targetVelocity - TunningTeliop.VELOCITY_ADJUST_LARGE);
+                shooterLeftPower  = Math.max(0.0, shooterLeftPower  - TunningTeliop.POWER_ADJUST_LARGE);
+                shooterRightPower = Math.max(0.0, shooterRightPower - TunningTeliop.POWER_ADJUST_LARGE);
             }
             if (controls.pressedRightBumper && !humanPlayerMode) {
-                targetVelocity = Math.min(TunningTeliop.VELOCITY_MAX, targetVelocity + TunningTeliop.VELOCITY_ADJUST_LARGE);
+                shooterLeftPower  = Math.min(1.0, shooterLeftPower  + TunningTeliop.POWER_ADJUST_LARGE);
+                shooterRightPower = Math.min(1.0, shooterRightPower + TunningTeliop.POWER_ADJUST_LARGE);
             }
             if (controls.pressedDpadLeft && !humanPlayerMode) {
-                targetVelocity = Math.max(TunningTeliop.VELOCITY_MIN, targetVelocity - TunningTeliop.VELOCITY_ADJUST_SMALL);
+                shooterLeftPower  = Math.max(0.0, shooterLeftPower  - TunningTeliop.POWER_ADJUST_SMALL);
+                shooterRightPower = Math.max(0.0, shooterRightPower - TunningTeliop.POWER_ADJUST_SMALL);
             }
             if (controls.pressedDpadRight && !humanPlayerMode) {
-                targetVelocity = Math.min(TunningTeliop.VELOCITY_MAX, targetVelocity + TunningTeliop.VELOCITY_ADJUST_SMALL);
+                shooterLeftPower  = Math.min(1.0, shooterLeftPower  + TunningTeliop.POWER_ADJUST_SMALL);
+                shooterRightPower = Math.min(1.0, shooterRightPower + TunningTeliop.POWER_ADJUST_SMALL);
             }
 
             // ========================================
-            // X — Toggle PID Shooter
+            // X — Toggle Manual Shooter — gamepad2
             // ========================================
             if (controls.pressedX && !humanPlayerMode && !rapidShootMode) {
                 shooterMode = (shooterMode == 1) ? 0 : 1;
-                if (shooterMode == 0) {
-                    pidLeft.reset();
-                    pidRight.reset();
-                }
             }
 
             // ========================================
-            // Y — Toggle Stop Servo
+            // Y — Toggle Stop Servo — gamepad2
             // ========================================
             if (controls.pressedY) {
                 servoHigh = !servoHigh;
@@ -176,7 +169,7 @@ public class TacoNats extends LinearOpMode {
             }
 
             // ========================================
-            // DPAD UP — Rapid Shoot Mode
+            // DPAD UP — Rapid Shoot Mode — gamepad2
             // ========================================
             if (controls.pressedDpadUp && !humanPlayerMode) {
                 if (!rapidShootMode) {
@@ -190,18 +183,20 @@ public class TacoNats extends LinearOpMode {
             }
 
             // ========================================
-            // DPAD DOWN — Human Player Mode
+            // DPAD DOWN — Human Player Mode — gamepad2
             // ========================================
             if (controls.pressedDpadDown) {
                 humanPlayerMode = !humanPlayerMode;
                 if (humanPlayerMode) {
-                    pidLeft.reset();
-                    pidRight.reset();
-                    shooterLeft.setPower(TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER);
-                    shooterRight.setPower(TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER);
+                    shooterLeftPower  = TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER;
+                    shooterRightPower = TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER;
+                    shooterLeft.setPower(shooterLeftPower);
+                    shooterRight.setPower(shooterRightPower);
                     intakeWheels.setPower(TunningTeliop.HUMAN_PLAYER_INTAKE_POWER);
                     rapidShootMode = false;
                 } else {
+                    shooterLeftPower  = TunningTeliop.DEFAULT_SHOOTER_POWER;
+                    shooterRightPower = TunningTeliop.DEFAULT_SHOOTER_POWER;
                     shooterLeft.setPower(0);
                     shooterRight.setPower(0);
                     intakeWheels.setPower(0);
@@ -211,44 +206,29 @@ public class TacoNats extends LinearOpMode {
             // ========================================
             // SHOOTER LOGIC
             // ========================================
-            double leftVelocity  = shooterLeft.getVelocity();
-            double rightVelocity = shooterRight.getVelocity();
-
             if (humanPlayerMode) {
-                // Raw power — no PID
                 shooterLeft.setPower(TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER);
                 shooterRight.setPower(TunningTeliop.HUMAN_PLAYER_SHOOTER_POWER);
                 intakeWheels.setPower(TunningTeliop.HUMAN_PLAYER_INTAKE_POWER);
 
             } else if (rapidShootMode) {
-                // Rapid shoot — PID active if shooter was on, pulse intake
-                if (shooterModeBeforeRapid == 1) {
-                    pidLeft.setTarget(targetVelocity);
-                    pidRight.setTarget(targetVelocity);
-                    shooterLeft.setPower(pidLeft.compute(leftVelocity));
-                    shooterRight.setPower(pidRight.compute(rightVelocity));
-                } else {
-                    shooterLeft.setPower(0);
-                    shooterRight.setPower(0);
-                }
+                shooterLeft.setPower(shooterMode == 1 ? shooterLeftPower   : 0);
+                shooterRight.setPower(shooterMode == 1 ? shooterRightPower : 0);
+
                 long cycleTime = (System.currentTimeMillis() - rapidShootStartTime) % TunningTeliop.RAPID_SHOOT_CYCLE_TIME;
                 intakeWheels.setPower(cycleTime < TunningTeliop.RAPID_SHOOT_BURST_TIME ? -1.0 : 0);
 
             } else if (shooterMode == 1) {
-                // Normal PID mode
-                pidLeft.setTarget(targetVelocity);
-                pidRight.setTarget(targetVelocity);
-                shooterLeft.setPower(pidLeft.compute(leftVelocity));
-                shooterRight.setPower(pidRight.compute(rightVelocity));
+                shooterLeft.setPower(shooterLeftPower);
+                shooterRight.setPower(shooterRightPower);
 
             } else {
-                // Shooter off
                 shooterLeft.setPower(0);
                 shooterRight.setPower(0);
             }
 
             // ========================================
-            // INTAKE — A and B buttons
+            // INTAKE — gamepad2 A and B buttons
             // ========================================
             if (!humanPlayerMode && !rapidShootMode) {
 
@@ -280,20 +260,12 @@ public class TacoNats extends LinearOpMode {
             // ========================================
             // TELEMETRY
             // ========================================
-            boolean atSpeed = Math.abs(leftVelocity  - targetVelocity) < TunningTeliop.SHOOTER_VELOCITY_TOLERANCE
-                    && Math.abs(rightVelocity - targetVelocity) < TunningTeliop.SHOOTER_VELOCITY_TOLERANCE;
-
             telemetry.addData("=== DRIVE ===", "");
             telemetry.addData("FL/FR", "%.2f / %.2f", frontLeftPower, frontRightPower);
             telemetry.addData("BL/BR", "%.2f / %.2f", backLeftPower, backRightPower);
-            telemetry.addData("=== SHOOTER PID ===", "");
+            telemetry.addData("=== SHOOTER ===", "");
+            telemetry.addData("Power", "%.2f", shooterRightPower);
             telemetry.addData("Mode", getShooterModeName());
-            telemetry.addData("Target Velocity", "%.0f ticks/s", targetVelocity);
-            telemetry.addData("Left  Velocity",  "%.0f ticks/s", leftVelocity);
-            telemetry.addData("Right Velocity",  "%.0f ticks/s", rightVelocity);
-            telemetry.addData("Left  Error",     "%.0f", pidLeft.getLastError());
-            telemetry.addData("Right Error",     "%.0f", pidRight.getLastError());
-            telemetry.addData("At Speed",        atSpeed ? "YES ✓" : "spinning up...");
             telemetry.addData("=== INTAKE ===", "");
             telemetry.addData("Power", "%.2f", intakeWheelsPower);
             telemetry.addData("Running", intakeRunning);
@@ -305,8 +277,8 @@ public class TacoNats extends LinearOpMode {
     }
 
     private String getShooterModeName() {
-        if (humanPlayerMode) return "Human Player (raw power)";
-        if (rapidShootMode)  return "Rapid Shoot PID (" + (shooterModeBeforeRapid == 1 ? "On" : "Off") + ")";
-        return shooterMode == 1 ? "PID Active" : "Off";
+        if (humanPlayerMode) return "Human Player";
+        if (rapidShootMode)  return "Rapid Shoot (" + (shooterModeBeforeRapid == 1 ? "Manual" : "Off") + ")";
+        return shooterMode == 1 ? "Manual" : "Off";
     }
 }
