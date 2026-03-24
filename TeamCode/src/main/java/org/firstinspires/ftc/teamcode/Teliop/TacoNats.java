@@ -212,8 +212,9 @@ public class TacoNats extends LinearOpMode {
                 intakeWheels.setPower(TunningTeliop.HUMAN_PLAYER_INTAKE_POWER);
 
             } else if (rapidShootMode) {
-                shooterLeft.setPower(shooterMode == 1 ? shooterLeftPower   : 0);
-                shooterRight.setPower(shooterMode == 1 ? shooterRightPower : 0);
+                // Always spin both shooters at full target power in rapid mode
+                shooterLeft.setPower(shooterLeftPower);
+                shooterRight.setPower(shooterRightPower);
 
                 long cycleTime = (System.currentTimeMillis() - rapidShootStartTime) % TunningTeliop.RAPID_SHOOT_CYCLE_TIME;
                 intakeWheels.setPower(cycleTime < TunningTeliop.RAPID_SHOOT_BURST_TIME ? -1.0 : 0);
@@ -264,7 +265,7 @@ public class TacoNats extends LinearOpMode {
             telemetry.addData("FL/FR", "%.2f / %.2f", frontLeftPower, frontRightPower);
             telemetry.addData("BL/BR", "%.2f / %.2f", backLeftPower, backRightPower);
             telemetry.addData("=== SHOOTER ===", "");
-            telemetry.addData("Power", "%.2f", shooterRightPower);
+            telemetry.addData("Power L/R", "%.2f / %.2f", shooterLeftPower, shooterRightPower);
             telemetry.addData("Mode", getShooterModeName());
             telemetry.addData("=== INTAKE ===", "");
             telemetry.addData("Power", "%.2f", intakeWheelsPower);
