@@ -32,7 +32,7 @@ public class NineBallBlueNatsV2 extends OpMode {
     public Servo stop              = null;
 
     // Shooter power (mirrors TacoNats DEFAULT_SHOOTER_POWER — adjust to taste)
-    private static final double SHOOTER_POWER = 0.55;
+    private static final double SHOOTER_POWER = 0.56;
 
     // Non-blocking timers for shooter
     private ElapsedTime shooterTimer    = new ElapsedTime();
@@ -41,13 +41,14 @@ public class NineBallBlueNatsV2 extends OpMode {
     private boolean shooterPulsing      = false;
     private boolean waitingForServo     = false;
     private boolean isFirstShot         = true;
+    private boolean isLastCycle         = false;  // NEW: flag for last shooting cycle
 
     // Intake half-line timing
     private ElapsedTime intakeTimer       = new ElapsedTime();
     private boolean intakeHalfLineDone    = false;
 
     // Configurable shooting heading (degrees)
-    private double shootingHeadingDegrees = 330.0;
+    private double shootingHeadingDegrees = 335.0;
 
     // -----------------------------------------------------------------------
     @Override
@@ -126,9 +127,10 @@ public class NineBallBlueNatsV2 extends OpMode {
      * Returns true once the full shooting sequence is complete.
      */
     private boolean updateShooter() {
-        // Always wait 1 second after servo opens before doing anything
+        // Wait after servo opens — longer delay on the last cycle
         if (waitingForServo) {
-            if (servoOpenTimer.milliseconds() < 1000) return false;
+            double servoDelay = isLastCycle ? 2500 : 1000;  // 2.5s last cycle, 1s otherwise
+            if (servoOpenTimer.milliseconds() < servoDelay) return false;
             waitingForServo = false;
 
             // After delay: if not spinning up (i.e. not first shot), begin pulsing now
@@ -141,7 +143,7 @@ public class NineBallBlueNatsV2 extends OpMode {
         double elapsed = shooterTimer.milliseconds();
 
         if (shooterSpinningUp) {
-            if (elapsed >= 3000) {
+            if (elapsed >= 2000) {
                 shooterSpinningUp = false;
                 shooterPulsing    = true;
                 shooterTimer.reset();
@@ -172,7 +174,7 @@ public class NineBallBlueNatsV2 extends OpMode {
     private void startShooting() {
         stop.setPosition(0.9); // Open servo
         servoOpenTimer.reset();
-        waitingForServo = true; // Always pause 1s after servo opens
+        waitingForServo = true; // Always pause after servo opens
 
         if (isFirstShot) {
             // First shot needs spin-up time (runs in parallel with servo delay)
@@ -180,7 +182,7 @@ public class NineBallBlueNatsV2 extends OpMode {
             shooterPulsing    = false;
             isFirstShot       = false;
         } else {
-            // Subsequent shots: pulsing starts after the 1s servo delay
+            // Subsequent shots: pulsing starts after the servo delay
             shooterSpinningUp = false;
             shooterPulsing    = false;
         }
@@ -425,7 +427,7 @@ public class NineBallBlueNatsV2 extends OpMode {
                 }
                 break;
 
-            // --- Return to shoot row 3 balls ---
+            // --- Return to shoot row 3 balls (last cycle) ---
             case 18:
                 follower.setMaxPower(1.0);
                 follower.followPath(paths.Path10);
@@ -437,6 +439,7 @@ public class NineBallBlueNatsV2 extends OpMode {
                 if (!follower.isBusy()) {
                     intakeWheels.setPower(0);
                     follower.setMaxPower(1.0);
+                    isLastCycle = true;  // Extended servo delay for final shot
                     startShooting();
                     pathState = 20;
                 }
