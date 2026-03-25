@@ -19,7 +19,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Other.Constants;
 
 @Autonomous(name = "12 Ball Nats Blue", group = "Autonomous")
 @Configurable
-public class TwelveBallNatsV2 extends OpMode {
+public class TwelveBallBlueNatsV2 extends OpMode {
     private TelemetryManager panelsTelemetry;
     public Follower follower;
     private int pathState = 0;
