@@ -35,10 +35,12 @@ public class NineBallBlueNatsV2 extends OpMode {
     private static final double SHOOTER_POWER = 0.55;
 
     // Non-blocking timers for shooter
-    private ElapsedTime shooterTimer   = new ElapsedTime();
-    private boolean shooterSpinningUp  = false;
-    private boolean shooterPulsing     = false;
-    private boolean isFirstShot        = true;
+    private ElapsedTime shooterTimer    = new ElapsedTime();
+    private ElapsedTime servoOpenTimer  = new ElapsedTime();
+    private boolean shooterSpinningUp   = false;
+    private boolean shooterPulsing      = false;
+    private boolean waitingForServo     = false;
+    private boolean isFirstShot         = true;
 
     // Intake half-line timing
     private ElapsedTime intakeTimer       = new ElapsedTime();
@@ -124,6 +126,18 @@ public class NineBallBlueNatsV2 extends OpMode {
      * Returns true once the full shooting sequence is complete.
      */
     private boolean updateShooter() {
+        // Always wait 1 second after servo opens before doing anything
+        if (waitingForServo) {
+            if (servoOpenTimer.milliseconds() < 1000) return false;
+            waitingForServo = false;
+
+            // After delay: if not spinning up (i.e. not first shot), begin pulsing now
+            if (!shooterSpinningUp) {
+                shooterPulsing = true;
+                shooterTimer.reset();
+            }
+        }
+
         double elapsed = shooterTimer.milliseconds();
 
         if (shooterSpinningUp) {
@@ -157,21 +171,18 @@ public class NineBallBlueNatsV2 extends OpMode {
     // -----------------------------------------------------------------------
     private void startShooting() {
         stop.setPosition(0.9); // Open servo
+        servoOpenTimer.reset();
+        waitingForServo = true; // Always pause 1s after servo opens
 
         if (isFirstShot) {
-            // First shot needs spin-up time
+            // First shot needs spin-up time (runs in parallel with servo delay)
             shooterSpinningUp = true;
             shooterPulsing    = false;
             isFirstShot       = false;
         } else {
-            // Subsequent shots: brief intake reversal to clear any jam, then pulse
-            intakeWheels.setPower(1.0);
-            try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-            intakeWheels.setPower(0);
-
+            // Subsequent shots: pulsing starts after the 1s servo delay
             shooterSpinningUp = false;
-            shooterPulsing    = true;
-            intakeWheels.setPower(-1.0);
+            shooterPulsing    = false;
         }
 
         shooterTimer.reset();

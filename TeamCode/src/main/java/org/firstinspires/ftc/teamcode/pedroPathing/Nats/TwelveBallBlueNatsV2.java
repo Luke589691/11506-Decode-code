@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Other.Constants;
 
 @Autonomous(name = "12 Ball Nats Blue", group = "Autonomous")
 @Configurable
+
 public class TwelveBallBlueNatsV2 extends OpMode {
     private TelemetryManager panelsTelemetry;
     public Follower follower;
@@ -32,7 +33,7 @@ public class TwelveBallBlueNatsV2 extends OpMode {
     public Servo stop             = null;
 
     // Shooter power — tune as needed
-    private static final double SHOOTER_POWER = 0.55;
+    private static final double SHOOTER_POWER = 0.50;
 
     // Non-blocking shooter state
     private ElapsedTime shooterTimer  = new ElapsedTime();
@@ -134,11 +135,11 @@ public class TwelveBallBlueNatsV2 extends OpMode {
 
         if (shooterPulsing) {
             // 4 shots: 800 ms intake ON + 400 ms wait = 1200 ms per cycle
-            int cycle     = (int)(elapsed / 1200);
-            int phaseTime = (int)(elapsed % 1200);
+            int cycle     = (int)(elapsed / 800);
+            int phaseTime = (int)(elapsed % 800);
 
             if (cycle < 4) {
-                intakeWheels.setPower(phaseTime < 800 ? -0.8 : 0);
+                intakeWheels.setPower(phaseTime < 300 ? -0.8 : 0);
             } else {
                 shooterPulsing = false;
                 intakeWheels.setPower(0);
